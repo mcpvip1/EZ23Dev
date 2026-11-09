@@ -1,0 +1,6 @@
+{
+  "name": "EASY 2D Pro",
+  "description": "High-performance Myanmar 2D lottery bookkeeping terminal with smart chat automation, real-time risk exposure board, and instant settlement.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
