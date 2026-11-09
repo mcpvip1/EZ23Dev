@@ -1,7 +1,25 @@
 @import "tailwindcss";
 
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', 'Padauk', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: #f3f5f9;
+    color: #0f172a;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  .font-mono,
+  code,
+  kbd,
+  pre,
+  .tabular-nums {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
 /*
- * One visual system for the whole app (EASY 2D Pro UI/UX).
+ * Modern Financial Terminal Design System (EASY 2D Pro)
  */
 .btn {
   display: inline-flex;
@@ -9,120 +27,176 @@
   user-select: none;
   align-items: center;
   justify-content: center;
-  gap: 0.35rem;
-  border-radius: 0.375rem;
+  gap: 0.375rem;
+  border-radius: 0.5rem;
   padding: 0.375rem 0.875rem;
   font-size: 0.8125rem;
   font-weight: 700;
-  transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.08s;
+  letter-spacing: -0.01em;
+  transition: background-color 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+              color 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.1s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
 }
 .btn:active:not(:disabled) {
-  transform: translateY(0.5px);
+  transform: translateY(0.5px) scale(0.995);
 }
 .btn-primary {
-  background-color: #4f46e5;
+  background: linear-gradient(180deg, #4f46e5 0%, #4338ca 100%);
+  border: 1px solid #4338ca;
   color: #ffffff;
-  box-shadow: 0 1px 2px 0 rgba(79, 70, 229, 0.25);
+  box-shadow: 0 1px 2px 0 rgba(67, 56, 202, 0.28), inset 0 1px 0 0 rgba(255, 255, 255, 0.14);
 }
-.btn-primary:hover {
-  background-color: #4338ca;
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #4338ca 0%, #3730a3 100%);
+  border-color: #3730a3;
 }
 .btn-amber {
-  background-color: #d97706;
+  background: linear-gradient(180deg, #d97706 0%, #b45309 100%);
+  border: 1px solid #b45309;
   color: #ffffff;
-  box-shadow: 0 1px 2px 0 rgba(217, 119, 6, 0.25);
+  box-shadow: 0 1px 2px 0 rgba(180, 83, 9, 0.25), inset 0 1px 0 0 rgba(255, 255, 255, 0.14);
 }
-.btn-amber:hover {
-  background-color: #b45309;
+.btn-amber:hover:not(:disabled) {
+  background: linear-gradient(180deg, #b45309 0%, #92400e 100%);
+  border-color: #92400e;
 }
 .btn-teal {
-  background-color: #0d9488;
+  background: linear-gradient(180deg, #0d9488 0%, #0f766e 100%);
+  border: 1px solid #0f766e;
   color: #ffffff;
 }
-.btn-teal:hover {
-  background-color: #0f766e;
+.btn-teal:hover:not(:disabled) {
+  background: linear-gradient(180deg, #0f766e 0%, #115e59 100%);
 }
 .btn-dark {
-  background-color: #1e293b;
+  background-color: #0f172a;
+  border: 1px solid #0f172a;
   color: #ffffff;
 }
-.btn-dark:hover {
-  background-color: #0f172a;
+.btn-dark:hover:not(:disabled) {
+  background-color: #1e293b;
 }
 .btn-danger {
-  background-color: #dc2626;
+  background: linear-gradient(180deg, #e11d48 0%, #be123c 100%);
+  border: 1px solid #be123c;
   color: #ffffff;
 }
-.btn-danger:hover {
-  background-color: #b91c1c;
+.btn-danger:hover:not(:disabled) {
+  background: linear-gradient(180deg, #be123c 0%, #9f1239 100%);
 }
 .btn-ghost {
-  background-color: #e2e8f0;
+  background-color: #f1f5f9;
+  border: 1px solid transparent;
   color: #334155;
 }
-.btn-ghost:hover {
-  background-color: #cbd5e1;
+.btn-ghost:hover:not(:disabled) {
+  background-color: #e2e8f0;
+  color: #0f172a;
 }
 .btn-outline {
   border: 1px solid #cbd5e1;
   background-color: #ffffff;
   color: #334155;
-  box-shadow: 0 1px 1px 0 rgba(15, 23, 42, 0.03);
+  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.03);
 }
-.btn-outline:hover {
+.btn-outline:hover:not(:disabled) {
   border-color: #94a3b8;
   background-color: #f8fafc;
+  color: #0f172a;
 }
 .btn-sm {
   min-height: 30px;
   padding: 0.25rem 0.625rem;
   font-size: 0.75rem;
+  border-radius: 0.4375rem;
 }
 .btn:disabled {
   cursor: not-allowed;
   opacity: 0.45;
 }
+
 .card {
-  border-radius: 0.5rem;
-  border: 1px solid #cbd5e1;
-  background-color: #ffffff;
-  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
-}
-.card-pad {
   border-radius: 0.75rem;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #dce2ec;
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.03);
+}
+
+.card-pad {
+  border-radius: 0.875rem;
+  border: 1px solid #dce2ec;
   background-color: #ffffff;
   padding: 1rem;
-  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.06);
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05);
 }
+
 .input {
-  border-radius: 0.375rem;
+  border-radius: 0.4375rem;
   border: 1px solid #cbd5e1;
   background-color: #ffffff;
   padding: 0.25rem 0.5rem;
   font-size: 0.8125rem;
+  color: #0f172a;
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
 }
+.input:focus {
+  border-color: #4f46e5;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.14);
+}
+
+/* Modern high-contrast operator command input (soft warm tint instead of harsh neon yellow) */
 .input-yellow {
-  border-radius: 0.375rem;
-  border: 1px solid #eab308;
-  background-color: #fef9c3;
+  border-radius: 0.4375rem;
+  border: 1px solid #f59e0b;
+  background-color: #fffbeb;
   padding: 0.25rem 0.5rem;
   font-size: 0.875rem;
   font-weight: 700;
   color: #0f172a;
+  box-shadow: inset 0 1px 1px 0 rgba(217, 119, 6, 0.05);
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+}
+.input-yellow:focus {
+  background-color: #ffffff;
+  border-color: #4f46e5;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.16);
 }
 .input-yellow::placeholder {
   font-weight: 500;
-  color: #a16207;
-  opacity: 0.75;
+  color: #92400e;
+  opacity: 0.65;
 }
+
 :focus-visible {
   outline: 2px solid #4f46e5;
   outline-offset: 2px;
 }
+
 @media print {
-  .no-print { display: none !important; }
-  body { background: white !important; }
-  .print-area { box-shadow: none !important; border: none !important; }
+  .no-print,
+  .no-print * {
+    display: none !important;
+  }
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .print-area,
+  .print-sheet {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  @page {
+    margin: 1.2cm;
+    size: auto;
+  }
 }

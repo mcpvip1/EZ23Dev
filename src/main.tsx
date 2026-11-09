@@ -4,7 +4,7 @@ import App from './App';
 import { LanguageProvider } from './i18n';
 import './index.css';
 
-if ('serviceWorker' in navigator) {
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     // Relative URL so registration works under a subpath; a failure
     // (e.g. inside a framed Space) must never break loading.

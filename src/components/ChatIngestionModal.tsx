@@ -4,6 +4,7 @@ import type { Person } from '../lib/db';
 import type { EntryRow } from '../lib/types';
 import { makeEntryRow } from '../lib/types';
 import { expandCode, expandEntryList } from '../shared-vendor/expand';
+import { Icon8 } from './Icons8';
 
 interface Props {
   isOpen: boolean;
@@ -162,7 +163,7 @@ export default function ChatIngestionModal({
         <div className="flex items-center justify-between border-b border-slate-200 bg-gradient-to-r from-indigo-700 via-indigo-600 to-indigo-800 px-5 py-3 text-white">
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 text-xl font-bold shadow-inner">
-              📥
+              <Icon8 name="inbox" size={24} />
             </span>
             <div>
               <h2 id="chat-ingest-title" className="text-lg font-bold tracking-tight">
@@ -179,7 +180,7 @@ export default function ChatIngestionModal({
             className="rounded-lg p-1.5 text-white/80 hover:bg-white/20 hover:text-white"
             aria-label="Close dialog"
           >
-            ✕
+            <Icon8 name="close" size={18} />
           </button>
         </div>
 
@@ -230,9 +231,10 @@ export default function ChatIngestionModal({
                 <button
                   type="button"
                   onClick={handlePasteFromClipboard}
-                  className="rounded border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 hover:bg-indigo-100 transition"
+                  className="inline-flex items-center gap-1 rounded border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 hover:bg-indigo-100 transition"
                 >
-                  📋 Paste Clipboard
+                  <Icon8 name="clipboard" size={13} />
+                  <span>Paste Clipboard</span>
                 </button>
                 <button
                   type="button"
@@ -251,8 +253,11 @@ export default function ChatIngestionModal({
               className="flex-1 w-full rounded-xl border border-slate-300 bg-white p-3 font-mono text-sm leading-relaxed text-slate-800 shadow-inner focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none min-h-[220px]"
             />
 
-            <div className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50/60 p-2 text-[11px] text-indigo-900 leading-normal">
-              💡 <strong>Smart Parser Features:</strong> Automatically converts Burmese digits (၀-၉), translates terms like <code className="bg-indigo-100 px-1 rounded">ပတ်လည်</code> to reverse <code className="bg-indigo-100 px-1 rounded">+</code>, <code className="bg-indigo-100 px-1 rounded">အပူး</code> to <code className="bg-indigo-100 px-1 rounded">//</code>, and ignores greetings/footers.
+            <div className="mt-3 flex items-start gap-2 rounded-lg border border-indigo-100 bg-indigo-50/60 p-2 text-[11px] text-indigo-900 leading-normal">
+              <Icon8 name="idea" size={16} className="mt-0.5 shrink-0" />
+              <span>
+                <strong>Smart Parser Features:</strong> Automatically converts Burmese digits (၀-၉), translates terms like <code className="bg-indigo-100 px-1 rounded">ပတ်လည်</code> to reverse <code className="bg-indigo-100 px-1 rounded">+</code>, <code className="bg-indigo-100 px-1 rounded">အပူး</code> to <code className="bg-indigo-100 px-1 rounded">//</code>, and ignores greetings/footers.
+              </span>
             </div>
           </div>
 
@@ -403,9 +408,10 @@ export default function ChatIngestionModal({
               <button
                 type="button"
                 onClick={handleCopyReceipt}
-                className="shrink-0 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-100 transition"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-100 transition"
               >
-                {copiedReceipt ? '✓ Copied!' : '📋 Copy Receipt'}
+                <Icon8 name={copiedReceipt ? 'checkmark' : 'clipboard'} size={14} />
+                <span>{copiedReceipt ? 'Copied!' : 'Copy Receipt'}</span>
               </button>
             </div>
           </div>
@@ -436,18 +442,20 @@ export default function ChatIngestionModal({
               type="button"
               disabled={report.validCount === 0}
               onClick={handleApplyToGrid}
-              className="btn btn-primary btn-sm bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-xs disabled:opacity-50"
+              className="btn btn-primary btn-sm gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-xs disabled:opacity-50"
             >
-              📥 Import into Fighter Grid
+              <Icon8 name="inbox" size={14} />
+              <span>Import into Fighter Grid</span>
             </button>
             <button
               type="button"
               disabled={report.validCount === 0}
               onClick={handleDirectSave}
-              className="btn btn-teal btn-sm bg-teal-600 hover:bg-teal-700 text-white font-bold shadow-xs disabled:opacity-50"
+              className="btn btn-teal btn-sm gap-1.5 bg-teal-600 hover:bg-teal-700 text-white font-bold shadow-xs disabled:opacity-50"
               title="Save directly as a new bet group in database and copy receipt"
             >
-              ⚡ Instant Save & Copy Receipt
+              <Icon8 name="lightning" size={14} />
+              <span>Instant Save & Copy Receipt</span>
             </button>
           </div>
         </div>

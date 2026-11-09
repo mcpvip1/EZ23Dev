@@ -7,13 +7,26 @@
  *  - details: one row per expanded 2D number (Bet / Carry)
  *  - lucky: draw results keyed by BetDay + AM/PM
  *  - templates / groups: copy-paste snippets and named pattern packs
- *  - settings: Calc row (limit / commission / rate)
- * Default state: NO transactional bets — only fighters/owners/templates/
- * groups/calc are seeded (from ../seed/seed.json, vendored copy in
- * src/seed.json). The 2024-04-11 worked example is loaded only via the
- * Backup screen's fixture button.
+ *  - settings: Calc row (limit / commission / rate) + DeviceProfile row
+ *
+ * Auto-Detect Startup Behavior:
+ *  - If the user is new or opens from a new device -> 100% Fresh Start
+ *    (all stores start clean and empty, default Calc settings).
+ *  - If the user is an existing user with data -> starts normally and
+ *    preserves all existing records.
  */
 import seedJson from '../seed.json';
+import {
+  collectBrowserEnvironment,
+  computeDeviceFingerprint,
+  decideBootAction,
+  generateDeviceId,
+  isUntouchedLegacySeedState,
+  readLocalDeviceProfile,
+  summarizePlatform,
+  writeLocalDeviceProfile,
+} from './deviceDetect';
+import type { BootReason, DeviceProfile } from './deviceDetect';
 
 export type Session = 'AM' | 'PM';
 export type Side = 'bet' | 'carry';
@@ -100,6 +113,7 @@ export interface AllData {
   templates: TemplateItem[];
   groups: GroupPack[];
   settings: CalcSettings | null;
+  deviceProfile?: DeviceProfile | null;
 }
 
 const DB_NAME = 'easy2d';
@@ -137,17 +151,21 @@ export function usingMemoryStorage(): boolean {
   return storageMode === 'memory';
 }
 
+let dbPromise: Promise<IDBDatabase> | null = null;
+
 function openDb(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
+  if (dbPromise) return dbPromise;
+  dbPromise = new Promise((resolve, reject) => {
     let settled = false;
     const fail = (e: unknown) => {
       if (!settled) {
         settled = true;
+        dbPromise = null;
         reject(e instanceof Error ? e : new Error(String(e)));
       }
     };
-    // A blocked or ignored open must never hang the app: give up after 4s.
-    const timer = setTimeout(() => fail(new Error('IndexedDB open timed out')), 4000);
+    // A blocked or ignored open must never hang the app: give up after 1.5s.
+    const timer = setTimeout(() => fail(new Error('IndexedDB open timed out')), 1500);
     let req: IDBOpenDBRequest;
     try {
       req = indexedDB.open(DB_NAME, DB_VERSION);
@@ -170,7 +188,12 @@ function openDb(): Promise<IDBDatabase> {
       if (!settled) {
         settled = true;
         clearTimeout(timer);
-        resolve(req.result);
+        const db = req.result;
+        db.onversionchange = () => {
+          db.close();
+          dbPromise = null;
+        };
+        resolve(db);
       }
     };
     req.onerror = () => {
@@ -182,6 +205,7 @@ function openDb(): Promise<IDBDatabase> {
       fail(new Error('IndexedDB open blocked'));
     };
   });
+  return dbPromise;
 }
 
 /** One-time probe: resolve to 'idb' only if a real open + read succeeds. */
@@ -197,7 +221,6 @@ function probeStorage(): Promise<'idb' | 'memory'> {
           r.onerror = () => reject(r.error);
           t.onerror = () => reject(t.error);
         });
-        db.close();
         storageMode = 'idb';
         return 'idb';
       } catch {
@@ -226,7 +249,6 @@ function tx<T>(store: StoreName, mode: IDBTransactionMode, fn: (s: IDBObjectStor
         const req = fn(t.objectStore(store));
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error);
-        t.oncomplete = () => db.close();
         t.onerror = () => reject(t.error);
       }),
   );
@@ -259,7 +281,6 @@ export async function dbPutMany<T>(store: StoreName, values: T[]): Promise<void>
     t.oncomplete = () => resolve();
     t.onerror = () => reject(t.error);
   });
-  db.close();
 }
 
 export async function dbDelete(store: StoreName, key: IDBValidKey): Promise<void> {
@@ -331,10 +352,148 @@ export function sessionFromClock(): Session {
   return new Date().getHours() < 13 ? 'AM' : 'PM';
 }
 
-/** Seed reference data only (fighters/owners/templates/groups/calc). No bets. */
+const DEFAULT_CALC: Omit<CalcSettings, 'updatedAt'> = {
+  key: 'calc',
+  limit: seedJson.calc?.limit ?? 40000,
+  commission: seedJson.calc?.commission ?? 16,
+  rate: seedJson.calc?.rate ?? 80,
+};
+
+/**
+ * Wipe all local stores and initialize a 100% clean Fresh Start state
+ * for a new user or a newly detected device.
+ */
+export async function resetToFreshStart(reason: BootReason = 'new_device'): Promise<DeviceProfile> {
+  const now = Date.now();
+  await Promise.all([
+    dbClear('people'),
+    dbClear('codes'),
+    dbClear('details'),
+    dbClear('lucky'),
+    dbClear('templates'),
+    dbClear('groups'),
+    dbClear('settings'),
+  ]);
+
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.removeItem('easy2d-closedays');
+    } catch {
+      // Ignore storage errors
+    }
+  }
+
+  const env = collectBrowserEnvironment();
+  const fp = computeDeviceFingerprint(env);
+  const existingLocal = readLocalDeviceProfile();
+  const deviceId =
+    existingLocal && existingLocal.fingerprintHash === fp
+      ? existingLocal.deviceId
+      : generateDeviceId(fp);
+
+  const profile: DeviceProfile = {
+    key: 'device_profile',
+    deviceId,
+    fingerprintHash: fp,
+    platformSummary: summarizePlatform(env),
+    isStandalone: env.isStandalone,
+    firstSeenAt: now,
+    lastSeenAt: now,
+    bootCount: 1,
+    lastBootMode: 'FRESH_START',
+    bootReason: reason,
+    authKey: existingLocal?.authKey ?? null,
+    licenseStatus: existingLocal?.licenseStatus ?? 'unconfigured',
+    updatedAt: now,
+  };
+
+  await dbPut('settings', {
+    ...DEFAULT_CALC,
+    updatedAt: now,
+  } as CalcSettings);
+  await dbPut('settings', profile);
+  writeLocalDeviceProfile(profile);
+
+  return profile;
+}
+
+/**
+ * Auto-detect whether this browser/device is a new user/device (Fresh Start)
+ * or an existing returning user with data (Normal Start).
+ */
+export async function autoDetectAndInitialize(): Promise<{ profile: DeviceProfile; isFreshStart: boolean }> {
+  const env = collectBrowserEnvironment();
+  const currentFingerprint = computeDeviceFingerprint(env);
+  const localProfile = readLocalDeviceProfile();
+  const all = await loadAll();
+  const dbProfile = all.deviceProfile ?? null;
+
+  const hasTransactionalData = all.codes.length > 0 || all.details.length > 0 || all.lucky.length > 0;
+  const fighterNos = all.people.filter((p) => p.side === 'fighter').map((p) => p.no);
+  const ownerNos = all.people.filter((p) => p.side === 'owner').map((p) => p.no);
+  const isLegacySeedOnly = isUntouchedLegacySeedState({
+    codesCount: all.codes.length,
+    detailsCount: all.details.length,
+    luckyCount: all.lucky.length,
+    fighterNos,
+    ownerNos,
+  });
+  const hasCustomUserRecords =
+    !isLegacySeedOnly && (all.people.length > 0 || all.templates.length > 0 || all.groups.length > 0);
+
+  const decision = decideBootAction({
+    localProfile,
+    dbProfile,
+    currentFingerprint,
+    hasTransactionalData,
+    hasCustomUserRecords,
+    isLegacySeedOnly,
+  });
+
+  if (decision.action === 'FRESH_START') {
+    const profile = await resetToFreshStart(decision.reason);
+    return { profile, isFreshStart: true };
+  }
+
+  // Returning user / existing data -> start normally and preserve all records!
+  const now = Date.now();
+  if (!all.settings) {
+    await dbPut('settings', {
+      ...DEFAULT_CALC,
+      updatedAt: now,
+    } as CalcSettings);
+  }
+
+  const baseProfile = localProfile ?? dbProfile;
+  const profile: DeviceProfile = {
+    key: 'device_profile',
+    deviceId: baseProfile?.deviceId ?? generateDeviceId(currentFingerprint),
+    fingerprintHash: currentFingerprint,
+    platformSummary: summarizePlatform(env),
+    isStandalone: env.isStandalone,
+    firstSeenAt: baseProfile?.firstSeenAt ?? now,
+    lastSeenAt: now,
+    bootCount: (baseProfile?.bootCount ?? 0) + 1,
+    lastBootMode: 'RETURNING_USER',
+    bootReason: decision.reason,
+    authKey: baseProfile?.authKey ?? null,
+    licenseStatus: baseProfile?.licenseStatus ?? 'unconfigured',
+    updatedAt: now,
+  };
+
+  await dbPut('settings', profile);
+  writeLocalDeviceProfile(profile);
+
+  return { profile, isFreshStart: false };
+}
+
+/** Backwards-compatible alias that runs the auto-detect startup flow. */
 export async function seedIfEmpty(): Promise<void> {
-  const people = await dbGetAll<Person>('people');
-  if (people.length > 0) return;
+  await autoDetectAndInitialize();
+}
+
+/** Optional helper to load legacy sample master data (fighters/owners/templates/groups) on demand. */
+export async function loadSampleMasterData(): Promise<void> {
   const now = Date.now();
   const seedPeople: Person[] = [
     ...(seedJson.fighters as { no: string; name: string; commission: number; rate: number }[]).map((f) => ({
@@ -365,26 +524,23 @@ export async function seedIfEmpty(): Promise<void> {
     'groups',
     (seedJson.groups as { name: string; rows: { code: string; amount: string }[] }[]).map((g) => ({ ...g, updatedAt: now })),
   );
-  await dbPut('settings', {
-    key: 'calc',
-    limit: seedJson.calc.limit,
-    commission: seedJson.calc.commission,
-    rate: seedJson.calc.rate,
-    updatedAt: now,
-  } as CalcSettings);
 }
 
 export async function loadAll(): Promise<AllData> {
-  const [people, codes, details, lucky, templates, groups, settings] = await Promise.all([
+  const [people, codes, details, lucky, templates, groups, rawSettings] = await Promise.all([
     dbGetAll<Person>('people'),
     dbGetAll<SavedCode>('codes'),
     dbGetAll<DetailRow>('details'),
     dbGetAll<Lucky>('lucky'),
     dbGetAll<TemplateItem>('templates'),
     dbGetAll<GroupPack>('groups'),
-    dbGetAll<CalcSettings>('settings'),
+    dbGetAll<CalcSettings | DeviceProfile>('settings'),
   ]);
-  return { people, codes, details, lucky, templates, groups, settings: settings[0] ?? null };
+  const calc = (rawSettings.find((s) => s.key === 'calc') as CalcSettings | undefined) ?? null;
+  const deviceProfile =
+    (rawSettings.find((s) => s.key === 'device_profile') as DeviceProfile | undefined) ??
+    readLocalDeviceProfile();
+  return { people, codes, details, lucky, templates, groups, settings: calc, deviceProfile };
 }
 
 /**
@@ -399,6 +555,16 @@ export async function loadAll(): Promise<AllData> {
 export async function loadFixture(): Promise<void> {
   const now = Date.now();
   const day = '2024-04-11';
+  // Ensure Fighter 12 exists so settlement verify works even from a fresh start
+  await dbPut('people', {
+    id: 'F:12',
+    side: 'fighter',
+    no: '12',
+    name: '',
+    commission: 15,
+    rate: 80,
+    updatedAt: now,
+  });
   const mk = (side: Side, session: Session, personNo: string, no: string, amount: number, sno: number, groupId: number): DetailRow => ({
     id: `fixture-${day}-${session}-${sno}`,
     side,
@@ -498,8 +664,11 @@ export async function importData(data: AllData): Promise<{ added: number; update
   await merge('templates', data.templates ?? [], (v) => v.no);
   await merge('groups', data.groups ?? [], (v) => v.name);
   if (data.settings) {
-    const cur = (await dbGetAll<CalcSettings>('settings'))[0];
-    if (!cur || (data.settings.updatedAt ?? 0) >= (cur.updatedAt ?? 0)) await dbPut('settings', data.settings);
+    const allSettings = await dbGetAll<CalcSettings | DeviceProfile>('settings');
+    const cur = allSettings.find((s) => s.key === 'calc') as CalcSettings | undefined;
+    if (!cur || (data.settings.updatedAt ?? 0) >= (cur.updatedAt ?? 0)) {
+      await dbPut('settings', { ...data.settings, key: 'calc' });
+    }
   }
   return { added, updated, skipped };
 }

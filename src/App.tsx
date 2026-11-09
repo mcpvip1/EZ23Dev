@@ -15,22 +15,25 @@ import {
 } from './shared-vendor/index.ts';
 import type { OverLimitRow } from './shared-vendor/index.ts';
 import {
+  autoDetectAndInitialize,
   dbDelete,
   dbPut,
   dbPutMany,
   importData,
   loadAll,
   loadFixture,
+  loadSampleMasterData,
   nowStamp,
-  seedIfEmpty,
+  resetToFreshStart,
   sessionFromClock,
   usingMemoryStorage,
   todayISO,
   uid,
 } from './lib/db';
 import type { AllData, CalcSettings, DetailRow, GroupPack, Lucky, Person, SavedCode, Session } from './lib/db';
-import { makeEntryRow } from './lib/types';
+import { fmt, makeEntryRow } from './lib/types';
 import type { EntryRow } from './lib/types';
+import type { SuggestedSplitItem } from './lib/suggestSplits';
 import seedJson from './seed.json';
 import Board from './pages/Board';
 import LuckyPage from './pages/Lucky';
@@ -51,12 +54,13 @@ import {
   CloseDaysDialog,
   ConfirmDialog,
   DeleteDialog,
+  DeviceStatusDialog,
   HighlightDialog,
   PopupDialog,
 } from './components/Dialogs';
 import { UnitSalesDialog } from './components/UnitSalesDialog';
 
-type Dialog = 'changeDate' | 'delete' | 'unitSales' | 'closeDays' | 'about' | 'highlight' | 'calc' | null;
+type Dialog = 'changeDate' | 'delete' | 'unitSales' | 'closeDays' | 'about' | 'highlight' | 'calc' | 'deviceStatus' | null;
 type ReportTab = 'current' | 'daily' | 'weekly' | 'range' | 'selected' | 'uptodate';
 /** Popups open OVER the main screen — the board stays mounted behind them. */
 type PopupKind = 'lucky' | 'people' | 'reports' | 'groups' | 'backup' | 'browse' | 'auto';
@@ -130,8 +134,8 @@ export default function App() {
   }>({ tab: 'current' });
   const [reportKey, setReportKey] = useState(0);
   const [carryEnabled, setCarryEnabled] = useState(true);
-  // D17: highlight default is cyan, like the live table's totals row.
-  const [highlight, setHighlight] = useState('#67e8f9');
+  // Modern soft rose-coral highlight for over-limit cells (editable via System -> Highlight Color)
+  const [highlight, setHighlight] = useState('#fecdd3');
   const [showChatIngest, setShowChatIngest] = useState(false);
   const fighterCodeRef = useRef<HTMLInputElement>(null);
   const carryCodeRef = useRef<HTMLInputElement>(null);
@@ -146,13 +150,13 @@ export default function App() {
 
   useEffect(() => {
     (async () => {
-      // The app must never sit on the loading screen: the db layer already
-      // falls back to in-memory storage when IndexedDB is unavailable, and
-      // as a last resort we render with an empty book so the operator can
-      // still work and use Backup/Restore.
+      // Auto-detect whether this browser/device is a new user/device (Fresh Start)
+      // or a returning operator with existing data (Normal Start).
       let d: AllData;
+      let isFresh = false;
       try {
-        await seedIfEmpty();
+        const boot = await autoDetectAndInitialize();
+        isFresh = boot.isFreshStart;
         d = await loadAll();
       } catch {
         d = { people: [], codes: [], details: [], lucky: [], templates: [], groups: [], settings: null };
@@ -166,13 +170,25 @@ export default function App() {
         setFighterNo(f.no);
         setFighterCom(f.commission);
         setFighterRate(f.rate);
+      } else {
+        setFighterNo('');
+        setFighterCom(15);
+        setFighterRate(80);
       }
       if (o) {
         setOwnerNo(o.no);
         setOwnerCom(o.commission);
         setOwnerRate(o.rate);
+      } else {
+        setOwnerNo('');
+        setOwnerCom(14);
+        setOwnerRate(80);
+      }
+      if (isFresh) {
+        showToast(t('toast.freshStartDetected'), 'info');
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fighters = useMemo(() => sortPeople((data?.people ?? []).filter((x) => x.side === 'fighter')), [data]);
@@ -321,11 +337,26 @@ export default function App() {
       return;
     }
     const person = (side === 'bet' ? fighters : owners).find((x) => x.no === personNo);
+    const now = Date.now();
     if (person) {
-      const now = Date.now();
       const updated = { ...person, commission, rate, updatedAt: now };
       void dbPut('people', updated);
       setData((d) => (d ? { ...d, people: d.people.map((x) => (x.id === person.id ? updated : x)) } : d));
+    } else {
+      // On a Fresh Start, if the operator typed a Fighter/Owner number and pressed Save directly,
+      // auto-register that person so saving works without friction.
+      const personSide = side === 'bet' ? 'fighter' : 'owner';
+      const created: Person = {
+        id: `${personSide === 'fighter' ? 'F' : 'O'}:${personNo}`,
+        side: personSide,
+        no: personNo,
+        name: '',
+        commission,
+        rate,
+        updatedAt: now,
+      };
+      void dbPut('people', created);
+      setData((d) => (d ? { ...d, people: [...d.people, created] } : d));
     }
     setPendingSave(side);
   };
@@ -563,6 +594,64 @@ export default function App() {
     showToast(t('toast.cropAdded', { n: entryRows.length }));
   };
 
+  /**
+   * ကာငွေအကြံပြုချက် (Suggest Splits): One-click conversion of near-limit / over-limit
+   * numbers into balanced Fighter (ထိုးငွေ) and Owner Carry (ပို့ငွေ / ကာငွေ) splits.
+   */
+  const handleApplySuggestedSplits = (items: SuggestedSplitItem[]) => {
+    if (items.length === 0) return;
+
+    const splitByNo = new Map(items.map((it) => [it.no, it]));
+    const newCarryRows: EntryRow[] = [];
+
+    items.forEach((it) => {
+      if (it.ownerSplit > 0) {
+        const e = expandCode(it.no, String(it.ownerSplit));
+        if (e) newCarryRows.push(makeEntryRow(e, String(it.ownerSplit), true));
+      }
+    });
+
+    // If any of the split numbers came from unsaved Fighter rows, convert those
+    // unsaved Fighter rows into their balanced `fighterSplit` portion.
+    const hasUnsavedSplits = items.some((it) => it.unsavedFighterExposure > 0);
+    if (hasUnsavedSplits) {
+      setFighterRows((prev) => {
+        const keptRows: EntryRow[] = [];
+        for (const row of prev) {
+          const remainingNums = row.numbers.filter((n) => !splitByNo.has(n.no));
+          if (remainingNums.length === row.numbers.length) {
+            keptRows.push(row);
+          } else {
+            for (const rem of remainingNums) {
+              const e = expandCode(rem.no, String(rem.amount));
+              if (e) keptRows.push(makeEntryRow(e, String(rem.amount)));
+            }
+          }
+        }
+        for (const it of items) {
+          if (it.unsavedFighterExposure > 0 && it.fighterSplit > 0) {
+            const fighterTargetForUnsaved = Math.max(0, it.fighterSplit - it.savedExposure);
+            if (fighterTargetForUnsaved > 0) {
+              const e = expandCode(it.no, String(fighterTargetForUnsaved));
+              if (e) keptRows.push(makeEntryRow(e, String(fighterTargetForUnsaved)));
+            }
+          }
+        }
+        return keptRows;
+      });
+    }
+
+    if (newCarryRows.length > 0) {
+      setCarryRows((prev) => [...prev, ...newCarryRows]);
+    }
+
+    const totalF = items.reduce((s, x) => s + x.fighterSplit, 0);
+    const totalO = items.reduce((s, x) => s + x.ownerSplit, 0);
+    showToast(
+      `ကာငွေအကြံပြုချက်အတိုင်း ဂဏန်း ${items.length} လုံး (ဖိုက်တာ ${fmt(totalF)} / ဒိုင်ကာငွေ ${fmt(totalO)}) ခွဲထုတ်ပြီးပါပြီ။`,
+    );
+  };
+
   const reload = async () => setData(await loadAll());
 
   const saveLucky = async (no: string) => {
@@ -665,6 +754,44 @@ export default function App() {
     showToast(t('toast.fixtureLoaded'));
   };
 
+  const handleLoadSampleMaster = async () => {
+    await loadSampleMasterData();
+    const d = await loadAll();
+    setData(d);
+    const f = sortPeople(d.people.filter((x) => x.side === 'fighter'))[0];
+    const o = sortPeople(d.people.filter((x) => x.side === 'owner'))[0];
+    if (f && !fighterNo) {
+      setFighterNo(f.no);
+      setFighterCom(f.commission);
+      setFighterRate(f.rate);
+    }
+    if (o && !ownerNo) {
+      setOwnerNo(o.no);
+      setOwnerCom(o.commission);
+      setOwnerRate(o.rate);
+    }
+    showToast(t('toast.sampleMasterLoaded'));
+  };
+
+  const handleResetFreshStart = async () => {
+    await resetToFreshStart('manual_reset');
+    const d = await loadAll();
+    setData(d);
+    setLimit(d.settings?.limit ?? 40000);
+    setFighterNo('');
+    setOwnerNo('');
+    setFighterCom(15);
+    setFighterRate(80);
+    setOwnerCom(14);
+    setOwnerRate(80);
+    setFighterRows([]);
+    setCarryRows([]);
+    setLastClipboard('');
+    setBetDay(todayISO());
+    setSession(sessionFromClock());
+    showToast(t('toast.freshResetDone'), 'info');
+  };
+
   /** D12/D13: persist the Calc row (limit / commission / rate) from the popup. */
   const saveCalc = async (limitV: number, commissionV: number, rateV: number) => {
     setLimit(limitV);
@@ -717,6 +844,9 @@ export default function App() {
         break;
       case 'backup':
         setPopup({ kind: 'backup' });
+        break;
+      case 'deviceStatus':
+        setDialog('deviceStatus');
         break;
       case 'browseBets':
         setPopup({ kind: 'browse' });
@@ -886,7 +1016,7 @@ export default function App() {
                   : '';
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900">
+    <div className="min-h-screen bg-[#f3f5f9] text-slate-900">
 
       {memMode && (
         <p className="no-print bg-amber-100 px-3 py-1.5 text-center text-sm font-medium text-amber-900">
@@ -895,27 +1025,28 @@ export default function App() {
       )}
       <MenuBar
         onAction={(a) => void onMenuAction(a)}
-        dateLabel={`${betDay} ${session}`}
+        dateLabel={`${betDay} · ${session}`}
+        deviceProfile={data.deviceProfile}
         right={
           <>
             <input
               type="date"
-              className="h-8 rounded-md border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-800 focus:border-indigo-500 focus:outline-none"
+              className="h-8 rounded-lg border border-slate-700 bg-slate-800 px-2.5 font-mono text-xs font-bold text-slate-100 focus:border-indigo-400 focus:outline-none"
               value={betDay}
               onChange={(e) => e.target.value && setBetDay(e.target.value)}
               aria-label={t('menu.changeDateLabel')}
               title={t('menu.changeDateTitle')}
             />
-            <div className="flex h-8 overflow-hidden rounded-md border border-slate-300 bg-slate-100 p-0.5">
+            <div className="flex h-8 overflow-hidden rounded-lg border border-slate-700 bg-slate-800 p-0.5">
               {(['AM', 'PM'] as Session[]).map((s) => (
                 <button
                   key={s}
                   type="button"
                   onClick={() => setSession(s)}
-                  className={`inline-flex items-center justify-center rounded px-2.5 text-xs font-extrabold transition-colors ${
+                  className={`inline-flex items-center justify-center rounded-md px-2.5 font-mono text-xs font-extrabold transition-colors ${
                     session === s
-                      ? 'bg-indigo-600 text-white shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'text-slate-400 hover:text-white'
                   }`}
                 >
                   {s}
@@ -926,7 +1057,7 @@ export default function App() {
         }
       />
 
-      <main className="mx-auto max-w-[1440px] px-3 py-2">
+      <main className="mx-auto max-w-[1260px] px-3 py-2.5">
         {/* The board is always mounted; popups render over it. */}
         <Board
           betDay={betDay}
@@ -997,22 +1128,24 @@ export default function App() {
           fighterPersonRef={fighterPersonRef}
           carryPersonRef={carryPersonRef}
           onOpenChatIngest={() => setShowChatIngest(true)}
+          onApplySuggestedSplits={handleApplySuggestedSplits}
         />
       </main>
 
       {/* ---- Popups over the board ---- */}
       {popup && (
-        <PopupDialog title={popupTitle} onClose={() => setPopup(null)} wide={popup.kind !== 'lucky'}>
+        <PopupDialog title={popupTitle} onClose={() => setPopup(null)} wide={true}>
           {popup.kind === 'lucky' && (
             <LuckyPage betDay={betDay} session={session} current={luckyNow} all={data.lucky} onSave={(no) => void saveLucky(no)} onOldNumbers={oldNumbers} />
           )}
           {popup.kind === 'people' && (
-            <>
-              <p className="mb-2 text-sm text-slate-500">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 rounded-lg border border-slate-200/80 bg-slate-50 px-3.5 py-2 text-xs font-medium text-slate-600">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-indigo-500" />
                 {popup.focus === 'owner' ? t('app.popup.ownerHint') : t('app.popup.fighterHint')}
-              </p>
+              </div>
               <PeoplePage people={data.people} focus={popup.focus} onSave={(p) => void savePerson(p)} onAdd={addPerson} onDelete={(id) => void deletePerson(id)} />
-            </>
+            </div>
           )}
           {popup.kind === 'reports' && (
             <Reports
@@ -1046,6 +1179,8 @@ export default function App() {
               onExport={exportJson}
               onImportFile={importFile}
               onLoadFixture={() => void loadFixtureClick()}
+              onLoadSampleMaster={() => void handleLoadSampleMaster()}
+              onResetFreshStart={handleResetFreshStart}
             />
           )}
           {popup.kind === 'browse' && (
@@ -1094,6 +1229,22 @@ export default function App() {
       {dialog === 'closeDays' && <CloseDaysDialog onClose={() => setDialog(null)} />}
       {dialog === 'about' && <AboutDialog onClose={() => setDialog(null)} />}
       {dialog === 'highlight' && <HighlightDialog color={highlight} onApply={setHighlight} onClose={() => setDialog(null)} />}
+      {dialog === 'deviceStatus' && (
+        <DeviceStatusDialog
+          profile={data.deviceProfile ?? null}
+          counts={{
+            codes: data.codes.length,
+            details: data.details.length,
+            lucky: data.lucky.length,
+            people: data.people.length,
+          }}
+          onCopyDeviceId={async (id) => {
+            if (await copyText(id)) showToast(t('toast.deviceIdCopied'));
+          }}
+          onResetFreshStart={handleResetFreshStart}
+          onClose={() => setDialog(null)}
+        />
+      )}
 
       {pendingSave && (
         <ConfirmDialog

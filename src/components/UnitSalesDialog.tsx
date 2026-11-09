@@ -177,64 +177,104 @@ export function UnitSalesDialog(p: UnitSalesDialogProps) {
 
   return (
     <Modal title={t('unitsales.title', { day: p.betDay, session: p.session })} onClose={p.onClose} wide>
-      <p className="mt-1 text-sm text-slate-500">{t('unitsales.note', { total: fmt(total) })}</p>
-      <div className="mt-3 grid max-h-72 grid-cols-5 gap-1 overflow-y-auto text-sm">
-        {Array.from({ length: 100 }, (_, i) => String(i).padStart(2, '0')).map((n) => (
-          <div
-            key={n}
-            className={`flex justify-between rounded border px-2 py-1 ${perNo.get(n) ? 'bg-yellow-50 font-bold' : 'text-slate-400'}`}
-          >
-            <span>{n}</span>
-            <span>{fmt(perNo.get(n) ?? 0)}</span>
-          </div>
-        ))}
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+        <p className="text-xs font-medium text-slate-600">{t('unitsales.note', { total: fmt(total) })}</p>
+        <span className="rounded bg-teal-100 px-2.5 py-0.5 font-mono text-xs font-extrabold text-teal-900">
+          Total: {fmt(total)}
+        </span>
       </div>
-      <h3 className="mt-3 text-sm font-bold text-slate-700">{t('unitsales.distTitle')}</h3>
-      <table className="mt-1 w-full border-collapse text-left text-sm">
-        <thead>
-          <tr className="border-b text-slate-500">
-            <th className="py-1 pr-2">{t('unitsales.colCount')}</th>
-            <th className="py-1 pr-2">{t('unitsales.colUnit')}</th>
-            <th className="py-1 pr-2">{t('unitsales.colAdd')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {dist.map((r) => (
-            <tr key={r.amt} className="border-b">
-              <td className="py-1 pr-2">{r.count}</td>
-              <td className="py-1 pr-2 font-bold">{fmt(r.amt)}</td>
-              <td className="py-1 pr-2">
-                <input
-                  type="number"
-                  min={0}
-                  className="input w-28 py-1"
-                  value={topUps[r.amt] ?? ''}
-                  placeholder="0"
-                  onChange={(e) => setTopUps((prev) => ({ ...prev, [r.amt]: e.target.value }))}
-                  aria-label={t('unitsales.addAmountLabel', { amt: r.amt })}
-                />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+
+      <div className="mt-3 grid gap-4 lg:grid-cols-[1.25fr_1fr]">
+        {/* Left: 00-99 Sales Matrix */}
+        <section className="card overflow-hidden border-t-2 border-t-slate-700">
+          <div className="border-b border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-extrabold text-slate-700">
+            00–99 Sales Matrix
+          </div>
+          <div className="p-2">
+            <div className="grid grid-cols-5 gap-1 text-xs sm:grid-cols-10">
+              {Array.from({ length: 100 }, (_, i) => String(i).padStart(2, '0')).map((n) => {
+                const v = perNo.get(n) ?? 0;
+                return (
+                  <div
+                    key={n}
+                    className={`flex flex-col items-center justify-center rounded border px-1 py-1 font-mono ${
+                      v > 0
+                        ? 'border-amber-300 bg-amber-50 font-extrabold text-slate-900'
+                        : 'border-slate-100 bg-slate-50/50 text-slate-400'
+                    }`}
+                  >
+                    <span className="text-[10px] font-bold text-slate-500">{n}</span>
+                    <span className="text-[11px] tabular-nums">{fmt(v)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* Right: Distribution & Bulk Top-Up Table */}
+        <section className="card flex flex-col overflow-hidden border-t-2 border-t-teal-600">
+          <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-3 py-1.5">
+            <h3 className="text-xs font-extrabold text-slate-800">{t('unitsales.distTitle')}</h3>
+            <span className="rounded bg-teal-100 px-2 py-0.5 font-mono text-[10px] font-bold text-teal-800">
+              {dist.length} tiers
+            </span>
+          </div>
+          <div className="max-h-72 flex-1 overflow-y-auto">
+            <table className="w-full border-collapse text-left text-xs">
+              <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-100 font-bold text-slate-600">
+                <tr>
+                  <th className="px-3 py-2">{t('unitsales.colCount')}</th>
+                  <th className="px-3 py-2 text-right">{t('unitsales.colUnit')}</th>
+                  <th className="px-3 py-2 text-right">{t('unitsales.colAdd')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {dist.map((r) => (
+                  <tr key={r.amt} className="hover:bg-slate-50">
+                    <td className="px-3 py-1.5 font-mono font-semibold text-slate-700">{r.count} nos</td>
+                    <td className="px-3 py-1.5 text-right font-mono font-extrabold tabular-nums text-slate-900">
+                      {fmt(r.amt)}
+                    </td>
+                    <td className="px-3 py-1.5 text-right">
+                      <input
+                        type="number"
+                        min={0}
+                        className="input-yellow h-7 w-24 px-2 text-right font-mono text-xs font-bold tabular-nums"
+                        value={topUps[r.amt] ?? ''}
+                        placeholder="0"
+                        onChange={(e) => setTopUps((prev) => ({ ...prev, [r.amt]: e.target.value }))}
+                        aria-label={t('unitsales.addAmountLabel', { amt: r.amt })}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
       {msg && (
-        <p className="mt-2 text-sm font-medium text-slate-700" role="status">
+        <p className="mt-3 rounded-md bg-teal-50 px-3 py-1.5 text-xs font-bold text-teal-800" role="status">
           {msg}
         </p>
       )}
-      <div className="mt-3 flex gap-2">
-        <button type="button" disabled={busy} onClick={() => void save()} className="btn btn-teal">
-          {t('unitsales.save')}
-        </button>
-        <button type="button" onClick={() => void copy()} className="btn btn-teal">
-          {t('unitsales.copy')}
-        </button>
-        <button type="button" onClick={p.onClose} className="btn btn-ghost">
-          {t('unitsales.cancel')}
-        </button>
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
+        <p className="text-[11px] text-slate-400">{t('unitsales.foot')}</p>
+        <div className="flex gap-2">
+          <button type="button" onClick={p.onClose} className="btn btn-ghost h-8 min-h-0 px-3 text-xs">
+            {t('unitsales.cancel')}
+          </button>
+          <button type="button" onClick={() => void copy()} className="btn btn-outline h-8 min-h-0 px-3.5 text-xs font-bold">
+            {t('unitsales.copy')}
+          </button>
+          <button type="button" disabled={busy} onClick={() => void save()} className="btn btn-teal h-8 min-h-0 px-4 text-xs font-bold">
+            {t('unitsales.save')}
+          </button>
+        </div>
       </div>
-      <p className="mt-2 text-xs text-slate-400">{t('unitsales.foot')}</p>
     </Modal>
   );
 }

@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLang } from '../i18n';
+import type { DeviceProfile } from '../lib/deviceDetect';
+import { Icon8 } from './Icons8';
+import type { Icon8Name } from './Icons8';
 
 /**
- * Classic menu bar from the original EASY main screen:
- * Setup | Report | System | AUTO | OK Thanks | Close | Template | T =
- * Dropdowns open on click; clicking an item runs it and closes the menu.
- * Labels come from the locale files (Myanmar default); the language
- * itself is switched from the System menu (မြန်မာ / English).
+ * Modern Institutional Top Navigation Bar for EASY 2D Pro:
+ * Brand Lockup | Setup / Report / System Dropdowns | Quick Actions | Device Status & Session Controls
  */
 
 export interface MenuAction {
@@ -21,6 +21,7 @@ export interface MenuAction {
     | 'about'
     | 'highlight'
     | 'backup'
+    | 'deviceStatus'
     | 'browseBets'
     | 'reportCurrent'
     | 'reportDaily'
@@ -44,12 +45,15 @@ interface Item {
   key: string;
   shortcut?: string;
   action: MenuAction['kind'];
+  icon?: Icon8Name;
   checked?: boolean;
+  danger?: boolean;
 }
 
 export default function MenuBar(p: {
   onAction: (a: MenuAction['kind']) => void;
   dateLabel: string;
+  deviceProfile?: DeviceProfile | null;
   right?: React.ReactNode;
 }) {
   const { t, lang } = useLang();
@@ -57,34 +61,35 @@ export default function MenuBar(p: {
   const ref = useRef<HTMLDivElement>(null);
 
   const SETUP: Item[] = [
-    { key: 'menu.setup.lucky', shortcut: 'Ctrl+L', action: 'lucky' },
-    { key: 'menu.setup.fighter', shortcut: 'Ctrl+F', action: 'fighter' },
-    { key: 'menu.setup.owner', shortcut: 'Ctrl+O', action: 'owner' },
-    { key: 'menu.setup.delete', shortcut: 'Ctrl+D', action: 'delete' },
-    { key: 'menu.setup.changeDate', shortcut: 'Ctrl+T', action: 'changeDate' },
-    { key: 'menu.setup.unitSales', action: 'unitSales' },
-    { key: 'menu.setup.closeDays', action: 'closeDays' },
+    { key: 'menu.setup.lucky', shortcut: 'Ctrl+L', action: 'lucky', icon: 'trophy' },
+    { key: 'menu.setup.fighter', shortcut: 'Ctrl+F', action: 'fighter', icon: 'users' },
+    { key: 'menu.setup.owner', shortcut: 'Ctrl+O', action: 'owner', icon: 'users' },
+    { key: 'menu.setup.unitSales', action: 'unitSales', icon: 'report' },
+    { key: 'menu.setup.changeDate', shortcut: 'Ctrl+T', action: 'changeDate', icon: 'calendar' },
+    { key: 'menu.setup.closeDays', action: 'closeDays', icon: 'calendar' },
+    { key: 'menu.setup.delete', shortcut: 'Ctrl+D', action: 'delete', icon: 'trash', danger: true },
   ];
 
   const REPORT: Item[] = [
-    { key: 'menu.report.current', shortcut: 'F9', action: 'reportCurrent' },
-    { key: 'menu.report.daily', shortcut: 'F10', action: 'reportDaily' },
-    { key: 'menu.report.weekly', shortcut: 'F11', action: 'reportWeekly' },
-    { key: 'menu.report.range', shortcut: 'F12', action: 'reportRange' },
-    { key: 'menu.report.rangeAMPM', action: 'reportRangeAMPM' },
-    { key: 'menu.report.selected', shortcut: 'F4', action: 'reportSelected' },
-    { key: 'menu.report.selectedViewOnly', shortcut: 'Ctrl+F4', action: 'reportSelectedViewOnly' },
-    { key: 'menu.report.upToDate', action: 'reportUpToDate' },
-    { key: 'menu.report.browseBets', action: 'browseBets' },
+    { key: 'menu.report.current', shortcut: 'F9', action: 'reportCurrent', icon: 'report' },
+    { key: 'menu.report.daily', shortcut: 'F10', action: 'reportDaily', icon: 'report' },
+    { key: 'menu.report.weekly', shortcut: 'F11', action: 'reportWeekly', icon: 'report' },
+    { key: 'menu.report.range', shortcut: 'F12', action: 'reportRange', icon: 'calendar' },
+    { key: 'menu.report.rangeAMPM', action: 'reportRangeAMPM', icon: 'calendar' },
+    { key: 'menu.report.selected', shortcut: 'F4', action: 'reportSelected', icon: 'users' },
+    { key: 'menu.report.selectedViewOnly', shortcut: 'Ctrl+F4', action: 'reportSelectedViewOnly', icon: 'document' },
+    { key: 'menu.report.upToDate', action: 'reportUpToDate', icon: 'report' },
+    { key: 'menu.report.browseBets', action: 'browseBets', icon: 'browse' },
   ];
 
   const SYSTEM: Item[] = [
-    { key: 'menu.system.about', action: 'about' },
-    { key: 'menu.system.highlight', action: 'highlight' },
-    { key: 'menu.system.backup', action: 'backup' },
-    { key: 'menu.lang.my', action: 'langMy', checked: lang === 'my' },
-    { key: 'menu.lang.en', action: 'langEn', checked: lang === 'en' },
-    { key: 'menu.system.exit', action: 'close' },
+    { key: 'menu.system.device', action: 'deviceStatus', icon: 'device' },
+    { key: 'menu.system.backup', action: 'backup', icon: 'database' },
+    { key: 'menu.system.highlight', action: 'highlight', icon: 'palette' },
+    { key: 'menu.system.about', action: 'about', icon: 'help' },
+    { key: 'menu.lang.my', action: 'langMy', icon: 'globe', checked: lang === 'my' },
+    { key: 'menu.lang.en', action: 'langEn', icon: 'globe', checked: lang === 'en' },
+    { key: 'menu.system.exit', action: 'close', icon: 'close' },
   ];
 
   useEffect(() => {
@@ -107,85 +112,133 @@ export default function MenuBar(p: {
     p.onAction(action);
   };
 
-  const menu = (id: string, labelKey: string, items: Item[], bold?: boolean) => (
-    <div className="relative" key={id}>
-      <button
-        type="button"
-        onClick={() => setOpen(open === id ? null : id)}
-        className={`btn btn-sm h-8 min-h-0 rounded-md px-2.5 text-xs ${bold ? 'font-extrabold' : 'font-semibold'} ${
-          open === id
-            ? 'bg-slate-800 text-white'
-            : 'text-slate-700 hover:bg-slate-200/80'
-        }`}
-      >
-        <span>{t(labelKey)}</span>
-        <span className="ml-0.5 text-[10px] opacity-60">▾</span>
-      </button>
-      {open === id && (
-        <div className="absolute left-0 top-full z-30 mt-1 min-w-60 rounded-lg border border-slate-200 bg-white py-1 shadow-xl ring-1 ring-black/5">
-          {items.map((it) => (
-            <button
-              key={it.key}
-              type="button"
-              onClick={() => run(it.action)}
-              className="flex w-full items-center justify-between px-3 py-1.5 text-left text-xs font-medium text-slate-700 transition-colors hover:bg-indigo-50 hover:text-indigo-700"
-            >
-              <span className="flex items-center gap-1.5">
-                <span className="w-3 text-indigo-600 font-bold">{it.checked ? '✓' : ''}</span>
-                <span>{t(it.key)}</span>
-              </span>
-              {it.shortcut && (
-                <kbd className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[10px] text-slate-500">
-                  {it.shortcut}
-                </kbd>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+  const menu = (id: string, labelKey: string, items: Item[], menuIcon: Icon8Name) => {
+    const isOpen = open === id;
+    return (
+      <div className="relative" key={id}>
+        <button
+          type="button"
+          onClick={() => setOpen(isOpen ? null : id)}
+          className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold whitespace-nowrap transition-colors ${
+            isOpen
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-200 hover:bg-slate-800 hover:text-white'
+          }`}
+        >
+          <Icon8 name={menuIcon} size={14} />
+          <span>{t(labelKey)}</span>
+          <Icon8
+            name="chevron-down"
+            size={11}
+            className={`transition-transform ${isOpen ? 'rotate-180 opacity-100' : 'opacity-65'}`}
+          />
+        </button>
+        {isOpen && (
+          <div className="absolute left-0 top-full z-40 mt-1.5 min-w-60 rounded-xl border border-slate-200/90 bg-white p-1.5 shadow-2xl ring-1 ring-slate-900/5">
+            {items.map((it) => (
+              <button
+                key={it.key}
+                type="button"
+                onClick={() => run(it.action)}
+                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-semibold transition-colors ${
+                  it.danger
+                    ? 'text-rose-600 hover:bg-rose-50 hover:text-rose-700'
+                    : 'text-slate-700 hover:bg-indigo-50/80 hover:text-indigo-700'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <span className="flex w-4 items-center justify-center">
+                    {it.checked ? (
+                      <Icon8 name="checkmark" size={14} />
+                    ) : it.icon ? (
+                      <Icon8 name={it.icon} size={14} />
+                    ) : null}
+                  </span>
+                  <span>{t(it.key)}</span>
+                </span>
+                {it.shortcut && (
+                  <kbd className="rounded-md border border-slate-200 bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-600">
+                    {it.shortcut}
+                  </kbd>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
-  const single = (labelKey: string, action: MenuAction['kind'], bold?: boolean) => (
+  const single = (labelKey: string, action: MenuAction['kind'], accent?: boolean) => (
     <button
       key={labelKey}
       type="button"
       onClick={() => run(action)}
-      className={`btn btn-sm h-8 min-h-0 rounded-md px-2.5 text-xs ${
-        bold ? 'font-extrabold text-indigo-700 hover:bg-indigo-50' : 'font-semibold text-slate-700 hover:bg-slate-200/80'
+      className={`inline-flex h-8 items-center justify-center rounded-lg px-2.5 text-xs font-bold whitespace-nowrap transition-colors ${
+        accent
+          ? 'border border-indigo-400/30 bg-indigo-500/15 text-indigo-200 hover:bg-indigo-500/25 hover:text-white'
+          : 'text-slate-300 hover:bg-slate-800 hover:text-white'
       }`}
     >
       {t(labelKey)}
     </button>
   );
 
+  const isFresh = p.deviceProfile?.lastBootMode === 'FRESH_START';
+
   return (
-    <div ref={ref} className="no-print border-b border-slate-300 bg-white/95 shadow-2xs backdrop-blur-xs">
-      <div className="mx-auto flex max-w-[1440px] flex-wrap items-center gap-1 px-3 py-1">
-        {menu('setup', 'menu.setup', SETUP)}
-        {menu('report', 'menu.report', REPORT)}
-        {menu('system', 'menu.system', SYSTEM)}
-        <div className="mx-1 h-4 w-px bg-slate-200" />
-        <button
-          type="button"
-          onClick={() => run('chatIngest')}
-          className="btn btn-sm h-8 min-h-0 rounded-md bg-indigo-600 px-3 text-xs font-bold text-white shadow-xs hover:bg-indigo-700"
-          title="Smart Chat Message Ingestion (Viber / Telegram / SMS) — Ctrl+I"
-        >
-          <span>📥</span> Chat Ingest
-        </button>
-        {single('menu.auto', 'auto', true)}
-        {single('menu.okThanks', 'okThanks')}
-        {single('menu.close', 'close')}
-        {single('menu.template', 'template')}
-        {single('menu.tEquals', 'tEquals')}
-        <span className="ml-auto flex items-center gap-2 text-xs text-slate-600">
-          <span className="hidden rounded bg-slate-100 px-2 py-1 font-mono text-xs font-bold text-slate-800 sm:inline-block">
-            {p.dateLabel}
+    <header ref={ref} className="no-print sticky top-0 z-30 border-b border-slate-800 bg-slate-900 text-slate-100 shadow-sm">
+      <div className="mx-auto flex max-w-[1260px] flex-wrap items-center gap-1.5 px-3 py-1.5">
+        {/* Brand Identity */}
+        <div className="mr-1.5 flex items-center gap-2 select-none">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-700 font-mono text-xs font-black text-white shadow-xs">
+            2D
+          </div>
+          <span className="font-mono text-sm font-extrabold tracking-tight text-white whitespace-nowrap">
+            EASY 2D
+          </span>
+        </div>
+
+        {/* Primary Dropdown Menus & Quick Actions (Right-Aligned) */}
+        <nav className="ml-auto flex items-center gap-1" aria-label="Main Menu">
+          {menu('setup', 'menu.setup', SETUP, 'settings')}
+          {menu('report', 'menu.report', REPORT, 'report')}
+          {menu('system', 'menu.system', SYSTEM, 'device')}
+        </nav>
+
+        <div className="mx-1 h-4 w-px bg-slate-700/80" />
+
+        {/* Smart Ingestion & Quick Actions */}
+        <div className="flex flex-wrap items-center gap-1">
+          {single('menu.auto', 'auto', true)}
+          {single('menu.template', 'template')}
+        </div>
+
+        <div className="mx-1 h-4 w-px bg-slate-700/80" />
+
+        {/* Right Zone: Auto-Detect Status Button + Active Date & Session Switcher */}
+        <div className="flex items-center gap-2">
+          {p.deviceProfile && (
+            <button
+              type="button"
+              onClick={() => run('deviceStatus')}
+              title={`${t('device.title')} — ${p.deviceProfile.deviceId}`}
+              className={`inline-flex h-7 items-center gap-1.5 rounded-lg border px-2 font-mono text-[11px] font-bold transition-colors whitespace-nowrap ${
+                isFresh
+                  ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25'
+                  : 'border-slate-700 bg-slate-800/90 text-slate-300 hover:border-slate-600 hover:text-white'
+              }`}
+            >
+              <Icon8 name="device" size={14} />
+              <span>{isFresh ? 'Fresh Start' : p.deviceProfile.deviceId.slice(0, 8)}</span>
+            </button>
+          )}
+          <span className="hidden text-xs font-semibold text-slate-300 xl:inline-block whitespace-nowrap">
+            {lang === 'my' ? 'လက်ရှိရက်စွဲ:' : 'Current Date:'}
           </span>
           {p.right}
-        </span>
+        </div>
       </div>
-    </div>
+    </header>
   );
 }

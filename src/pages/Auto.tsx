@@ -23,6 +23,7 @@
  *    the rule stops materialising; bets already saved are untouched).
  */
 import { useMemo, useRef, useState } from 'react';
+import { Icon8 } from '../components/Icons8';
 import type { AllData, Session } from '../lib/db';
 import { expandCode } from '../shared-vendor/index.ts';
 import {
@@ -511,10 +512,10 @@ export default function Auto(p: AutoProps) {
                       <button
                         type="button"
                         onClick={() => setPending((prev) => prev.filter((x) => x.id !== row.id))}
-                        className="btn btn-danger btn-sm"
+                        className="btn btn-danger btn-sm p-1"
                         aria-label={t('auto.deletePendingRow', { code: row.displayCode })}
                       >
-                        ✕
+                        <Icon8 name="close" size={14} />
                       </button>
                     </td>
                   </tr>

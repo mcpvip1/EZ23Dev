@@ -3,12 +3,15 @@ import { settlePerson } from '../shared-vendor/index.ts';
 import type { AllData } from '../lib/db';
 import { fmt } from '../lib/types';
 import { useLang } from '../i18n';
+import { ConfirmDialog } from '../components/Dialogs';
 
 interface Props {
   data: AllData;
   onExport: () => void;
   onImportFile: (f: File) => Promise<{ added: number; updated: number; skipped: number }>;
   onLoadFixture: () => void;
+  onLoadSampleMaster?: () => void;
+  onResetFreshStart?: () => Promise<void>;
 }
 
 export default function BackupPage(p: Props) {
@@ -16,6 +19,7 @@ export default function BackupPage(p: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState('');
   const [verify, setVerify] = useState<string | null>(null);
+  const [confirmFresh, setConfirmFresh] = useState(false);
 
   const runVerify = () => {
     const day = '2024-04-11';
@@ -49,16 +53,26 @@ export default function BackupPage(p: Props) {
 
   return (
     <div className="grid gap-3 lg:grid-cols-2">
-      <section className="rounded-2xl border bg-white p-4 shadow-sm">
-        <h2 className="text-lg font-bold text-slate-800">{t('backup.title')}</h2>
-        <p className="text-sm text-slate-500">{t('backup.note')}</p>
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
+        <h2 className="text-base font-extrabold text-slate-800">{t('backup.title')}</h2>
+        <p className="mt-1 text-xs leading-relaxed text-slate-500">{t('backup.note')}</p>
         <div className="mt-3 flex flex-wrap gap-2">
-          <button type="button" onClick={p.onExport} className="btn btn-primary">
+          <button type="button" onClick={p.onExport} className="btn btn-primary btn-sm">
             {t('backup.export')}
           </button>
-          <button type="button" onClick={() => fileRef.current?.click()} className="btn btn-dark">
+          <button type="button" onClick={() => fileRef.current?.click()} className="btn btn-dark btn-sm">
             {t('backup.import')}
           </button>
+          {p.onLoadSampleMaster && (
+            <button type="button" onClick={p.onLoadSampleMaster} className="btn btn-outline btn-sm">
+              {t('backup.loadSampleMaster')}
+            </button>
+          )}
+          {p.onResetFreshStart && (
+            <button type="button" onClick={() => setConfirmFresh(true)} className="btn btn-danger btn-sm">
+              {t('backup.freshReset')}
+            </button>
+          )}
           <input
             ref={fileRef}
             type="file"
@@ -77,8 +91,8 @@ export default function BackupPage(p: Props) {
             }}
           />
         </div>
-        {msg && <p className="mt-2 text-sm text-slate-700">{msg}</p>}
-        <p className="mt-3 text-sm text-slate-500">
+        {msg && <p className="mt-2 text-xs font-semibold text-slate-700">{msg}</p>}
+        <p className="mt-3 font-mono text-xs font-semibold text-slate-500">
           {t('backup.currentData', {
             details: p.data.details.length,
             codes: p.data.codes.length,
@@ -88,19 +102,33 @@ export default function BackupPage(p: Props) {
         </p>
       </section>
 
-      <section className="rounded-2xl border bg-white p-4 shadow-sm">
-        <h2 className="text-lg font-bold text-slate-800">{t('backup.fixtureTitle')}</h2>
-        <p className="text-sm text-slate-500">{t('backup.fixtureNote')}</p>
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
+        <h2 className="text-base font-extrabold text-slate-800">{t('backup.fixtureTitle')}</h2>
+        <p className="mt-1 text-xs leading-relaxed text-slate-500">{t('backup.fixtureNote')}</p>
         <div className="mt-3 flex flex-wrap gap-2">
-          <button type="button" onClick={p.onLoadFixture} className="btn btn-amber">
+          <button type="button" onClick={p.onLoadFixture} className="btn btn-amber btn-sm">
             {t('backup.loadFixture')}
           </button>
-          <button type="button" onClick={runVerify} className="btn btn-ghost">
+          <button type="button" onClick={runVerify} className="btn btn-ghost btn-sm">
             {t('backup.verify')}
           </button>
         </div>
-        {verify && <pre className="mt-2 whitespace-pre-wrap rounded-lg bg-slate-100 p-2 text-sm">{verify}</pre>}
+        {verify && <pre className="mt-2 whitespace-pre-wrap rounded-lg bg-slate-100 p-2 font-mono text-xs">{verify}</pre>}
       </section>
+
+      {confirmFresh && p.onResetFreshStart && (
+        <ConfirmDialog
+          title={t('device.freshResetConfirmTitle')}
+          message={t('device.freshResetConfirmMsg')}
+          confirmLabel={t('device.freshResetYes')}
+          danger
+          onCancel={() => setConfirmFresh(false)}
+          onConfirm={async () => {
+            setConfirmFresh(false);
+            await p.onResetFreshStart!();
+          }}
+        />
+      )}
     </div>
   );
 }

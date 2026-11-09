@@ -5,6 +5,7 @@ import { deleteSavedCode, nowStamp, uid, updateSavedCode } from '../lib/db';
 import { ConfirmDialog, PopupDialog } from '../components/Dialogs';
 import { fmt } from '../lib/types';
 import { useLang } from '../i18n';
+import { Icon8 } from '../components/Icons8';
 
 export interface BrowseProps {
   data: AllData;
@@ -16,36 +17,8 @@ export interface BrowseProps {
 
 /**
  * Browse / edit / delete of saved bets — the web equivalent of the
- * original Bet.cs / Carry.cs forms (opened from MDIMain cmdOpenF /
- * cmdOpenO). Content only: it is mounted inside a popup dialog, so it
- * renders no page chrome and no "Back to Board" button (Esc closes it
- * via onClose). The Bet/Carry side is an internal toggle (the props
- * carry no side) defaulting to Bet.
- *
- * Original behaviour reproduced:
- * - gT: per-person totals for the working BetDay + session; click a
- *   person to load their codes (LoadData / LoadDetail).
- * - g: codes grouped by groupId, in save order, each group followed by
- *   a pink subtotal row; rows edited in Browse are painted red
- *   (betcode.edited = 1).
- * - Double-click / Edit opens the edit popup (GroupBox1: txtNoEdit =
- *   codeNo, txtAmtEdit = amount); saving re-expands the code with
- *   expandCode, updates the code row (betDateTime = now, edited = 1)
- *   and replaces that sno's detail rows (cmdEditSave_Click).
- * - Del deletes the selected code row (+ its detail rows, by sno);
- *   Del on a person deletes ALL of that person's numbers for the day
- *   (g_KeyDown / gT_KeyDown, both with a confirm).
- * - Click a code row copies that group's clipboard text (g_Click ->
- *   cmdGroupCopy: "`No.(n)-d.M AM/PM" + code=amount lines + T=group
- *   total, plus "All T=" + person total when it is not the first
- *   group); the d.M stamp is TODAY, as in the original.
- * - Re-price: one amount applied to every code in a group
- *   (cmdEditGroupSave_Click — Ctrl+click in the original).
- * - Copy settlement: per-person "(n) / T= / (WinNo) P= / You=…" text
- *   (Bet.cs btnCurrentTotal + settlePersonClipboard; Bet flips the
- *   sign, Carry does not).
+ * original Bet.cs / Carry.cs forms.
  */
-
 async function copyText(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);
@@ -69,6 +42,7 @@ export default function Browse(p: BrowseProps) {
   const { t } = useLang();
   const [side, setSide] = useState<'bet' | 'carry'>('bet');
   const [personNo, setPersonNo] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedCodeId, setSelectedCodeId] = useState('');
   const [editing, setEditing] = useState<SavedCode | null>(null);
   const [editCode, setEditCode] = useState('');
@@ -78,10 +52,9 @@ export default function Browse(p: BrowseProps) {
   const [repriceAmt, setRepriceAmt] = useState('');
   const [copied, setCopied] = useState('');
   const [busy, setBusy] = useState(false);
-  // In-app confirm (window.confirm is suppressed in the Space frame — see item 3).
   const [confirm, setConfirm] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
 
-  // Esc closes the popup (the dialog wrapper owns onClose) — but not while a confirm is open.
+  // Esc closes popup when no sub-dialog is active
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !editing && repriceGroup === null && !confirm) p.onClose();
@@ -92,7 +65,7 @@ export default function Browse(p: BrowseProps) {
 
   const sideLabel = side === 'bet' ? t('reports.fighterLabel') : t('reports.selOwner');
 
-  // People with saved rows this day/session, in master-table order.
+  // People with saved rows this day/session
   const persons = useMemo(() => {
     const nos = new Set<string>();
     p.data.codes.forEach((c) => {
@@ -109,10 +82,27 @@ export default function Browse(p: BrowseProps) {
     return [...nos].sort((a, b) => (order.get(a) ?? 999) - (order.get(b) ?? 999) || a.localeCompare(b));
   }, [p.data, p.betDay, p.session, side]);
 
+  const fighterCount = useMemo(() => {
+    const s = new Set<string>();
+    p.data.codes.forEach((c) => {
+      if (c.side === 'bet' && c.betDay === p.betDay && c.session === p.session) s.add(c.personNo);
+    });
+    return s.size;
+  }, [p.data, p.betDay, p.session]);
+
+  const ownerCount = useMemo(() => {
+    const s = new Set<string>();
+    p.data.codes.forEach((c) => {
+      if (c.side === 'carry' && c.betDay === p.betDay && c.session === p.session) s.add(c.personNo);
+    });
+    return s.size;
+  }, [p.data, p.betDay, p.session]);
+
   const person = personNo && persons.includes(personNo) ? personNo : persons[0] ?? '';
-  const personName = p.data.people.find(
+  const personObj = p.data.people.find(
     (x) => x.no === person && (side === 'bet' ? x.side === 'fighter' : x.side === 'owner'),
-  )?.name;
+  );
+  const personName = personObj?.name;
 
   const personDetails = useMemo(
     () =>
@@ -121,6 +111,7 @@ export default function Browse(p: BrowseProps) {
       ),
     [p.data, p.betDay, p.session, side, person],
   );
+
   const personCodes = useMemo(
     () =>
       p.data.codes
@@ -131,7 +122,7 @@ export default function Browse(p: BrowseProps) {
     [p.data, p.betDay, p.session, side, person],
   );
 
-  // Groups in save order; group sequence = position + 1 (Bet.cs funcRowNo).
+  // Groups in save order
   const groups = useMemo(() => {
     const out: { groupId: number; seq: number; codes: SavedCode[]; subtotal: number }[] = [];
     const byId = new Map<number, SavedCode[]>();
@@ -174,8 +165,6 @@ export default function Browse(p: BrowseProps) {
     return `${now.getDate()}.${now.getMonth() + 1}`;
   };
 
-  // cmdGroupCopy_Click: "`No.(seq)-d.M AM/PM" + code lines + T=group
-  // total; "All T=" + person total when it is not the first group.
   const copyGroup = async (seq: number, codes: SavedCode[], subtotal: number) => {
     const lines = codes.map((c) => `${c.displayCode}=${c.amountText}`).join('\r\n');
     let text = `\`No.(${seq})-${todayStamp()} ${p.session}\r\n${lines}\r\nT=${subtotal}`;
@@ -218,6 +207,7 @@ export default function Browse(p: BrowseProps) {
         amountText: editAmt.trim(),
         rowTotal: expanded.rowTotal,
         betDateTime: nowStamp(),
+        edited: true,
       };
       const newDetails: DetailRow[] = expanded.numbers.map((n) => ({
         id: uid(),
@@ -249,8 +239,6 @@ export default function Browse(p: BrowseProps) {
       setEditError(t('browse.errEnterRepriceAmt'));
       return;
     }
-    // Validate every code in the group first (cmdEditGroupSave replays
-    // cmdEditSave per row); abort without saving anything on a bad code.
     const expanded = group.codes.map((c) => ({ code: c, r: expandCode(c.codeNo, repriceAmt) }));
     const bad = expanded.find((e) => !e.r);
     if (bad) {
@@ -268,6 +256,7 @@ export default function Browse(p: BrowseProps) {
           amountText: repriceAmt.trim(),
           rowTotal: r!.rowTotal,
           betDateTime: nowStamp(),
+          edited: true,
         };
         const newDetails: DetailRow[] = r!.numbers.map((n) => ({
           id: uid(),
@@ -322,11 +311,11 @@ export default function Browse(p: BrowseProps) {
     });
   };
 
-  // Del key on a selected code row (g_KeyDown).
+  // Del key on a selected code row
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement | null;
-      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) return;
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT')) return;
       if (e.key === 'Delete' && selectedCodeId) {
         const code = personCodes.find((c) => c.id === selectedCodeId);
         if (code) void deleteCode(code);
@@ -347,58 +336,171 @@ export default function Browse(p: BrowseProps) {
     return m;
   }, [p.data, p.betDay, p.session, side]);
 
+  const filteredPersons = useMemo(() => {
+    if (!searchQuery.trim()) return persons;
+    const q = searchQuery.toLowerCase().trim();
+    return persons.filter((no) => {
+      if (no.toLowerCase().includes(q)) return true;
+      const nm = p.data.people.find(
+        (x) => x.no === no && (side === 'bet' ? x.side === 'fighter' : x.side === 'owner'),
+      )?.name;
+      return nm ? nm.toLowerCase().includes(q) : false;
+    });
+  }, [persons, searchQuery, p.data.people, side]);
+
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex rounded-full border bg-white p-0.5">
-          {(['bet', 'carry'] as const).map((s) => (
+    <div className="space-y-4">
+      {/* Top executive toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/90 bg-slate-50/80 p-2.5">
+        <div className="flex items-center gap-2">
+          {/* Segmented side toggle */}
+          <div className="flex rounded-lg border border-slate-300 bg-white p-0.5 shadow-xs">
             <button
-              key={s}
               type="button"
               onClick={() => {
-                setSide(s);
+                setSide('bet');
                 setPersonNo('');
                 setSelectedCodeId('');
               }}
-              className={`btn btn-sm ${side === s ? 'btn-primary' : 'btn-ghost'}`}
+              className={`flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-xs font-bold transition-all ${
+                side === 'bet'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
             >
-              {s === 'bet' ? t('browse.betTab') : t('browse.carryTab')}
+              <span>{t('browse.betTab')}</span>
+              <span
+                className={`rounded-full px-1.5 py-0.2 text-[10px] font-extrabold ${
+                  side === 'bet' ? 'bg-indigo-700 text-indigo-100' : 'bg-slate-200 text-slate-700'
+                }`}
+              >
+                {fighterCount}
+              </span>
             </button>
-          ))}
+            <button
+              type="button"
+              onClick={() => {
+                setSide('carry');
+                setPersonNo('');
+                setSelectedCodeId('');
+              }}
+              className={`flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-xs font-bold transition-all ${
+                side === 'carry'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+            >
+              <span>{t('browse.carryTab')}</span>
+              <span
+                className={`rounded-full px-1.5 py-0.2 text-[10px] font-extrabold ${
+                  side === 'carry' ? 'bg-amber-700 text-amber-100' : 'bg-slate-200 text-slate-700'
+                }`}
+              >
+                {ownerCount}
+              </span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-xs">
+            <Icon8 name="calendar" size={14} />
+            <span>{p.betDay}</span>
+            <span
+              className={`rounded px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${
+                p.session === 'AM' ? 'bg-amber-100 text-amber-800' : 'bg-indigo-100 text-indigo-800'
+              }`}
+            >
+              {p.session}
+            </span>
+          </div>
         </div>
-        <span className="text-sm text-slate-500">
-          {t('browse.hint', { day: p.betDay, session: p.session })}
-        </span>
-        {copied && <span className="rounded bg-emerald-100 px-2 py-1 text-sm font-bold text-emerald-800">{copied}</span>}
+
+        {copied && (
+          <div className="flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 shadow-xs animate-in fade-in duration-200">
+            <Icon8 name="checkmark" size={14} />
+            <span>{copied}</span>
+          </div>
+        )}
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)]">
-        {/* Per-person totals (Bet.cs gT) */}
-        <section className="card-pad">
-          <h3 className="px-1 py-1 text-sm font-bold text-slate-700">
-            {side === 'bet' ? t('browse.totalsFighter') : t('browse.totalsOwner')}
-          </h3>
-          {persons.length === 0 ? (
-            <p className="px-1 py-2 text-sm text-slate-400">
-              {side === 'bet'
-                ? t('browse.noSavedBet', { day: p.betDay, session: p.session })
-                : t('browse.noSavedCarry', { day: p.betDay, session: p.session })}
-            </p>
-          ) : (
-            <table className="w-full text-sm">
-              <tbody>
-                {persons.map((no) => (
-                  <tr
-                    key={no}
-                    onClick={() => {
-                      setPersonNo(no);
-                      setSelectedCodeId('');
-                    }}
-                    className={`cursor-pointer border-t ${no === person ? 'bg-indigo-100 font-bold' : ''}`}
-                  >
-                    <td className="px-2 py-1.5">{no}</td>
-                    <td className="px-2 py-1.5 text-right">{fmt(personTotals.get(no) ?? 0)}</td>
-                    <td className="px-1 py-1.5 text-right">
+      {/* Main split workspace */}
+      <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
+        {/* Left Sidebar: Persons Directory */}
+        <section className="flex flex-col rounded-xl border border-slate-300 bg-white shadow-xs">
+          <div className="border-b border-slate-200 bg-slate-50/70 p-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
+                {side === 'bet' ? t('browse.totalsFighter') : t('browse.totalsOwner')}
+              </h3>
+              <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-black text-slate-700">
+                {persons.length}
+              </span>
+            </div>
+            {/* Quick search */}
+            <div className="relative mt-2">
+              <input
+                type="text"
+                placeholder="Search # or name..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 bg-white py-1.5 pl-7 pr-7 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+              <span className="pointer-events-none absolute left-2 top-1.5 text-xs text-slate-400">
+                <Icon8 name="search" size={14} />
+              </span>
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 top-1.5 text-xs text-slate-400 hover:text-slate-700"
+                >
+                  <Icon8 name="close" size={13} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="max-h-[62vh] flex-1 overflow-y-auto p-2">
+            {filteredPersons.length === 0 ? (
+              <div className="p-4 text-center text-xs text-slate-400">
+                {persons.length === 0
+                  ? side === 'bet'
+                    ? t('browse.noSavedBet', { day: p.betDay, session: p.session })
+                    : t('browse.noSavedCarry', { day: p.betDay, session: p.session })
+                  : 'No matches found.'}
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {filteredPersons.map((no) => {
+                  const nm = p.data.people.find(
+                    (x) => x.no === no && (side === 'bet' ? x.side === 'fighter' : x.side === 'owner'),
+                  )?.name;
+                  const isSelected = no === person;
+                  const amt = personTotals.get(no) ?? 0;
+                  return (
+                    <div
+                      key={no}
+                      onClick={() => {
+                        setPersonNo(no);
+                        setSelectedCodeId('');
+                      }}
+                      className={`group flex cursor-pointer items-center justify-between rounded-lg border px-2.5 py-2 transition-all ${
+                        isSelected
+                          ? side === 'bet'
+                            ? 'border-indigo-500 bg-indigo-50/80 text-indigo-950 shadow-xs ring-1 ring-indigo-400'
+                            : 'border-amber-500 bg-amber-50/80 text-amber-950 shadow-xs ring-1 ring-amber-400'
+                          : 'border-transparent bg-slate-50/60 text-slate-800 hover:border-slate-200 hover:bg-slate-100/80'
+                      }`}
+                    >
+                      <div className="min-w-0 pr-2">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-xs font-black">{no}</span>
+                          {nm && <span className="truncate text-[11px] font-medium text-slate-500">— {nm}</span>}
+                        </div>
+                        <div className="mt-0.5 font-mono text-xs font-bold text-slate-900">
+                          {fmt(amt)} <span className="text-[10px] font-normal text-slate-500">Ks</span>
+                        </div>
+                      </div>
+
                       <button
                         type="button"
                         title={t('browse.delAllTitle', { no })}
@@ -406,202 +508,323 @@ export default function Browse(p: BrowseProps) {
                           e.stopPropagation();
                           void deletePersonAll(no);
                         }}
-                        className="btn btn-danger btn-sm"
+                        className="rounded p-1 text-slate-300 opacity-60 transition-opacity hover:bg-red-50 hover:text-red-600 group-hover:opacity-100"
                       >
-                        {t('browse.delAll')}
+                        <Icon8 name="trash" size={15} />
                       </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </section>
 
-        {/* Grouped codes with pink subtotals (Bet.cs g) */}
-        <section className="card-pad">
+        {/* Right Detail Workspace: Groups & Codes */}
+        <section className="flex flex-col rounded-xl border border-slate-300 bg-white p-4 shadow-xs">
           {person ? (
             <>
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-base font-bold text-slate-800">
-                  {sideLabel} {person}
-                  {personName ? ` — ${personName}` : ''}
-                </h3>
-                <span className="text-sm text-slate-500">
-                  T={fmt(personTotal)}
-                  {lucky ? ` · (${lucky.no}) P=${fmt(winAmt)}` : ''}
-                  {youText ? (
-                    <>
-                      {' · '}
-                      <span className="font-bold text-slate-700">{youText}</span>
-                    </>
-                  ) : (
-                    ''
-                  )}
-                </span>
+              {/* Executive Settlement Ribbon */}
+              <div
+                className={`mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3.5 ${
+                  side === 'bet'
+                    ? 'border-indigo-200 bg-indigo-50/40'
+                    : 'border-amber-200 bg-amber-50/40'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`rounded-md px-2 py-0.5 text-xs font-extrabold uppercase tracking-wide ${
+                        side === 'bet' ? 'bg-indigo-600 text-white' : 'bg-amber-600 text-white'
+                      }`}
+                    >
+                      {sideLabel} #{person}
+                    </span>
+                    {personName && <span className="text-sm font-bold text-slate-800">{personName}</span>}
+                  </div>
+
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600">
+                    <div>
+                      <span className="text-slate-500">ထိုးငွေ စုစုပေါင်း:</span>{' '}
+                      <span className="font-mono font-bold text-slate-900">{fmt(personTotal)} Ks</span>
+                    </div>
+                    {lucky && (
+                      <div className="border-l border-slate-300 pl-3">
+                        <span className="text-slate-500">ထွက်ဂဏန်း ({lucky.no}):</span>{' '}
+                        <span
+                          className={`font-mono font-bold ${
+                            winAmt > 0 ? 'text-emerald-700 underline' : 'text-slate-700'
+                          }`}
+                        >
+                          {fmt(winAmt)} Ks
+                        </span>
+                      </div>
+                    )}
+                    {youText && (
+                      <div className="border-l border-slate-300 pl-3">
+                        <span className="text-slate-500">အခြေချ:</span>{' '}
+                        <span className="font-mono font-black text-slate-900">{youText}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 <button
                   type="button"
                   onClick={() => void copySettlement()}
-                  className="btn btn-outline btn-sm ml-auto"
+                  className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-xs hover:border-slate-400 hover:bg-slate-50 active:bg-slate-100"
                   title={t('browse.copySettlementTitle')}
                 >
-                  {t('browse.copySettlement')}
+                  <Icon8 name="clipboard" size={14} />
+                  <span>{t('browse.copySettlement')}</span>
                 </button>
               </div>
-              <p className="mt-1 text-xs text-slate-500">{t('browse.help')}</p>
-              {groups.length === 0 ? (
-                <p className="mt-2 text-sm text-slate-400">{t('browse.noRows')}</p>
-              ) : (
-                groups.map((g) => (
-                  <div key={g.groupId} className="mt-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-slate-600">{t('browse.group', { seq: g.seq })}</span>
-                      <button
-                        type="button"
-                        onClick={() => void copyGroup(g.seq, g.codes, g.subtotal)}
-                        className="btn btn-outline btn-sm"
-                      >
-                        {t('browse.copyGroup')}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setRepriceGroup(g.groupId);
-                          setRepriceAmt('');
-                          setEditError('');
-                        }}
-                        className="btn btn-outline btn-sm"
-                      >
-                        {t('browse.repriceGroup')}
-                      </button>
-                    </div>
-                    <table className="mt-1 w-full min-w-[520px] text-sm">
-                      <thead>
-                        <tr className="border-b text-left text-slate-500">
-                          <th className="py-1">{t('browse.colNum')}</th>
-                          <th>{t('browse.colCode')}</th>
-                          <th className="text-right">{t('browse.colAmount')}</th>
-                          <th>{t('browse.colCodeNo')}</th>
-                          <th>{t('browse.colBetDateTime')}</th>
-                          <th className="text-right">{t('browse.colRowTotal')}</th>
-                          <th />
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {g.codes.map((c) => (
-                          <tr
-                            key={c.id}
-                            onClick={() => {
-                              setSelectedCodeId(c.id);
-                              void copyGroup(g.seq, g.codes, g.subtotal);
-                            }}
-                            onDoubleClick={() => openEdit(c)}
-                            className={`cursor-pointer border-b ${selectedCodeId === c.id ? 'bg-indigo-100' : ''} ${c.edited ? 'text-red-600' : ''}`}
-                            title={t('browse.rowTitle')}
-                          >
-                            <td className="py-1 font-bold">{c.sno}</td>
-                            <td className="font-bold">{c.displayCode}</td>
-                            <td className="text-right">{Number(c.amountText) ? fmt(Number(c.amountText)) : c.amountText}</td>
-                            <td>{c.codeNo}</td>
-                            <td className="text-xs">{c.betDateTime}</td>
-                            <td className="text-right">{fmt(c.rowTotal)}</td>
-                            <td className="text-right">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openEdit(c);
-                                }}
-                                className="btn btn-outline btn-sm"
-                              >
-                                {t('browse.editRow')}
-                              </button>{' '}
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  void deleteCode(c);
-                                }}
-                                className="btn btn-danger btn-sm"
-                              >
-                                {t('browse.delRow')}
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                        <tr className="font-bold">
-                          <td />
-                          <td />
-                          <td className="py-1 text-right" style={{ backgroundColor: '#fbcfe8' }}>
-                            {fmt(g.subtotal)}
-                          </td>
-                          <td colSpan={4} className="text-xs font-normal text-slate-500">
-                            {t('browse.groupSubtotal', { seq: g.seq })}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
+
+              {/* Interaction guidance hint */}
+              <div className="mb-3 flex items-center justify-between text-[11px] text-slate-500">
+                <span className="inline-flex items-center gap-1">
+                  <Icon8 name="idea" size={14} />
+                  <span>{t('browse.help')}</span>
+                </span>
+                <span className="font-semibold text-slate-700">{groups.length} Groups</span>
+              </div>
+
+              {/* Group cards feed */}
+              <div className="max-h-[54vh] space-y-4 overflow-y-auto pr-1">
+                {groups.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-slate-300 p-8 text-center text-sm text-slate-400">
+                    {t('browse.noRows')}
                   </div>
-                ))
-              )}
+                ) : (
+                  groups.map((g) => (
+                    <div
+                      key={g.groupId}
+                      className="overflow-hidden rounded-xl border border-slate-300 bg-white shadow-xs"
+                    >
+                      {/* Group Header */}
+                      <div className="flex flex-wrap items-center justify-between border-b border-slate-200 bg-slate-50/80 px-3.5 py-2">
+                        <div className="flex items-center gap-2">
+                          <span className="rounded-md bg-slate-800 px-2 py-0.5 text-xs font-extrabold text-white">
+                            {t('browse.group', { seq: g.seq })}
+                          </span>
+                          <span className="text-xs font-medium text-slate-500">
+                            ({g.codes.length} codes · {g.codes[0]?.betDateTime ?? ''})
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <div className="mr-2 font-mono text-xs font-black text-slate-900">
+                            Total: {fmt(g.subtotal)} Ks
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => void copyGroup(g.seq, g.codes, g.subtotal)}
+                            className="flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                            title={t('browse.copyGroup')}
+                          >
+                            <Icon8 name="clipboard" size={13} />
+                            <span>{t('browse.copyGroup')}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRepriceGroup(g.groupId);
+                              setRepriceAmt('');
+                              setEditError('');
+                            }}
+                            className="flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                          >
+                            <Icon8 name="edit" size={13} />
+                            <span>{t('browse.repriceGroup')}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Group Table */}
+                      <div className="overflow-x-auto">
+                        <table className="w-full min-w-[580px] text-xs">
+                          <thead>
+                            <tr className="border-b border-slate-200 bg-slate-100/60 font-semibold text-slate-600">
+                              <th className="px-3 py-2 text-left">{t('browse.colNum')}</th>
+                              <th className="px-3 py-2 text-left">{t('browse.colCode')}</th>
+                              <th className="px-3 py-2 text-right">{t('browse.colAmount')}</th>
+                              <th className="px-3 py-2 text-left">{t('browse.colCodeNo')}</th>
+                              <th className="px-3 py-2 text-left">{t('browse.colBetDateTime')}</th>
+                              <th className="px-3 py-2 text-right">{t('browse.colRowTotal')}</th>
+                              <th className="px-3 py-2 text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {g.codes.map((c) => {
+                              const isRowSelected = selectedCodeId === c.id;
+                              return (
+                                <tr
+                                  key={c.id}
+                                  onClick={() => {
+                                    setSelectedCodeId(c.id);
+                                    void copyGroup(g.seq, g.codes, g.subtotal);
+                                  }}
+                                  onDoubleClick={() => openEdit(c)}
+                                  className={`cursor-pointer transition-colors ${
+                                    isRowSelected
+                                      ? 'bg-indigo-100/70 font-semibold text-indigo-950'
+                                      : 'hover:bg-slate-50'
+                                  }`}
+                                  title={t('browse.rowTitle')}
+                                >
+                                  <td className="px-3 py-2 font-mono font-bold text-slate-700">{c.sno}</td>
+                                  <td className="px-3 py-2">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-mono text-sm font-black text-slate-900">
+                                        {c.displayCode}
+                                      </span>
+                                      {Boolean(c.edited) && (
+                                        <span className="rounded bg-rose-100 px-1.5 py-0.2 text-[9px] font-extrabold text-rose-800">
+                                          ပြင်ပြီး
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="px-3 py-2 text-right font-mono font-semibold text-slate-800">
+                                    {Number(c.amountText) ? fmt(Number(c.amountText)) : c.amountText}
+                                  </td>
+                                  <td className="px-3 py-2 font-mono text-slate-600 truncate max-w-[150px]">
+                                    {c.codeNo}
+                                  </td>
+                                  <td className="px-3 py-2 text-[11px] text-slate-500 whitespace-nowrap">
+                                    {c.betDateTime}
+                                  </td>
+                                  <td className="px-3 py-2 text-right font-mono font-bold text-slate-900">
+                                    {fmt(c.rowTotal)}
+                                  </td>
+                                  <td className="px-3 py-2 text-right whitespace-nowrap">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openEdit(c);
+                                      }}
+                                      className="rounded border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 mr-1"
+                                    >
+                                      {t('browse.editRow')}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        void deleteCode(c);
+                                      }}
+                                      className="rounded border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700 hover:bg-red-100"
+                                    >
+                                      {t('browse.delRow')}
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+
+                            {/* Group Subtotal Row - styled with refined legacy pink tint */}
+                            <tr className="border-t-2 border-rose-300 bg-rose-50/70 font-bold text-rose-950">
+                              <td colSpan={2} className="px-3 py-2 text-left">
+                                {t('browse.groupSubtotal', { seq: g.seq })}
+                              </td>
+                              <td colSpan={3} className="px-3 py-2 text-right text-xs text-rose-800/80 font-normal">
+                                {g.codes.length} codes in group
+                              </td>
+                              <td className="px-3 py-2 text-right font-mono text-sm font-black text-rose-950">
+                                {fmt(g.subtotal)}
+                              </td>
+                              <td />
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </>
           ) : (
-            <p className="text-sm text-slate-400">{t('browse.pickPerson')}</p>
+            <div className="flex h-64 flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 p-8 text-center text-slate-400">
+              <Icon8 name="users" size={36} />
+              <p className="mt-2 text-sm font-medium">{t('browse.pickPerson')}</p>
+            </div>
           )}
         </section>
       </div>
 
-      {/* Edit popup (Bet.cs GroupBox1) — shared PopupDialog (narrow), same Esc-stack + backdrop-close as the other dialogs. */}
+      {/* Edit Code Popup (Bet.cs GroupBox1) */}
       {editing && (
         <PopupDialog
           title={t('browse.editTitle', { side: sideLabel, person: editing.personNo })}
           onClose={() => setEditing(null)}
           wide={false}
         >
-          <p className="text-sm text-slate-500">
-            {t('browse.editSub', { code: editing.displayCode, sno: editing.sno, gid: editing.groupId })}
-          </p>
-          <label className="mt-3 block text-sm font-medium text-slate-600">
-            {t('browse.editCode')}
-            <input
-              className="input mt-1 w-full font-bold"
-              value={editCode}
-              onChange={(e) => setEditCode(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') (document.getElementById('browse-edit-amt') as HTMLInputElement | null)?.focus();
-                if (e.key === 'Escape') setEditing(null);
-              }}
-              autoFocus
-            />
-          </label>
-          <label className="mt-2 block text-sm font-medium text-slate-600">
-            {t('browse.editAmount')}
-            <input
-              id="browse-edit-amt"
-              className="input mt-1 w-full font-bold"
-              value={editAmt}
-              inputMode="decimal"
-              onChange={(e) => setEditAmt(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') void saveEdit();
-                if (e.key === 'Escape') setEditing(null);
-              }}
-            />
-          </label>
-          {editError && <p className="mt-2 text-sm font-bold text-red-600">{editError}</p>}
-          <div className="mt-3 flex gap-2">
-            <button type="button" disabled={busy} onClick={() => void saveEdit()} className="btn btn-primary">
-              {t('browse.editSave')}
-            </button>
-            <button type="button" onClick={() => setEditing(null)} className="btn btn-outline">
-              {t('browse.editCancel')}
-            </button>
+          <div className="space-y-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-600">
+              {t('browse.editSub', { code: editing.displayCode, sno: editing.sno, gid: editing.groupId })}
+            </div>
+
+            <label className="block text-xs font-bold text-slate-700">
+              {t('browse.editCode')}
+              <input
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-sm font-bold text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                value={editCode}
+                onChange={(e) => setEditCode(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') (document.getElementById('browse-edit-amt') as HTMLInputElement | null)?.focus();
+                  if (e.key === 'Escape') setEditing(null);
+                }}
+                autoFocus
+              />
+            </label>
+
+            <label className="block text-xs font-bold text-slate-700">
+              {t('browse.editAmount')}
+              <input
+                id="browse-edit-amt"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-sm font-bold text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                value={editAmt}
+                inputMode="decimal"
+                onChange={(e) => setEditAmt(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') void saveEdit();
+                  if (e.key === 'Escape') setEditing(null);
+                }}
+              />
+            </label>
+
+            {editError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-2.5 text-xs font-bold text-red-700">
+                {editError}
+              </div>
+            )}
+
+            <p className="text-[11px] text-slate-500 leading-normal">{t('browse.editNote')}</p>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
+              <button
+                type="button"
+                onClick={() => setEditing(null)}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100"
+              >
+                {t('browse.editCancel')}
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void saveEdit()}
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {t('browse.editSave')}
+              </button>
+            </div>
           </div>
-          <p className="mt-2 text-xs text-slate-500">{t('browse.editNote')}</p>
         </PopupDialog>
       )}
 
-      {/* Re-price popup (Bet.cs GroupBox2) — shared PopupDialog (narrow). */}
+      {/* Re-price group popup (Bet.cs GroupBox2) */}
       {repriceGroup !== null && (
         <PopupDialog
           title={t('browse.repriceTitle', {
@@ -612,32 +835,52 @@ export default function Browse(p: BrowseProps) {
           onClose={() => setRepriceGroup(null)}
           wide={false}
         >
-          <p className="text-sm text-slate-500">{t('browse.repriceNote')}</p>
-          <label className="mt-3 block text-sm font-medium text-slate-600">
-            {t('browse.repriceAmount')}
-            <input
-              className="input mt-1 w-full font-bold"
-              value={repriceAmt}
-              inputMode="decimal"
-              onChange={(e) => setRepriceAmt(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') void saveReprice();
-                if (e.key === 'Escape') setRepriceGroup(null);
-              }}
-              autoFocus
-            />
-          </label>
-          {editError && <p className="mt-2 text-sm font-bold text-red-600">{editError}</p>}
-          <div className="mt-3 flex gap-2">
-            <button type="button" disabled={busy} onClick={() => void saveReprice()} className="btn btn-primary">
-              {t('browse.repriceApply')}
-            </button>
-            <button type="button" onClick={() => setRepriceGroup(null)} className="btn btn-outline">
-              {t('browse.repriceCancel')}
-            </button>
+          <div className="space-y-3">
+            <p className="text-xs text-slate-600">{t('browse.repriceNote')}</p>
+
+            <label className="block text-xs font-bold text-slate-700">
+              {t('browse.repriceAmount')}
+              <input
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-sm font-bold text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                value={repriceAmt}
+                inputMode="decimal"
+                onChange={(e) => setRepriceAmt(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') void saveReprice();
+                  if (e.key === 'Escape') setRepriceGroup(null);
+                }}
+                autoFocus
+              />
+            </label>
+
+            {editError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-2.5 text-xs font-bold text-red-700">
+                {editError}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
+              <button
+                type="button"
+                onClick={() => setRepriceGroup(null)}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100"
+              >
+                {t('browse.repriceCancel')}
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void saveReprice()}
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {t('browse.repriceApply')}
+              </button>
+            </div>
           </div>
         </PopupDialog>
       )}
+
+      {/* Destructive Confirm Dialog */}
       {confirm && (
         <ConfirmDialog
           title={confirm.title}

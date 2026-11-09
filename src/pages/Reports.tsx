@@ -4,6 +4,8 @@ import type { DetailRow, Lucky, Person, SavedCode } from '../lib/db';
 import { todayISO } from '../lib/db';
 import { fmt } from '../lib/types';
 import { useLang } from '../i18n';
+import PrintPreviewModal from '../components/PrintPreviewModal';
+import { Icon8 } from '../components/Icons8';
 
 type Tab = 'current' | 'daily' | 'weekly' | 'range' | 'selected' | 'uptodate';
 
@@ -13,18 +15,10 @@ interface Props {
   details: DetailRow[];
   lucky: Lucky[];
   people: Person[];
-  /**
-   * Saved code rows, for the BetDateTime column: DetailRow carries no
-   * timestamp (D7) — the session's timestamp comes from its code row
-   * (SavedCode.betDateTime, earliest sno wins). Omit it and the column
-   * falls back to "betDay session".
-   */
   codes?: SavedCode[];
-  /** Menu shortcuts (F9/F10/F11/F12/F4/Ctrl+F4) open the report on a tab. */
   initialTab?: Tab;
   initialPerson?: { side: 'bet' | 'carry'; no: string };
   initialRange?: { from: string; to: string; fromSess: 'AM' | 'PM'; toSess: 'AM' | 'PM' };
-  /** "Selected (View Only)" — read-only view of one person's totals. */
   viewOnly?: boolean;
 }
 
@@ -51,14 +45,6 @@ function weekBounds(dateISO: string): { from: string; to: string } {
   return { from: iso(from), to: iso(to) };
 }
 
-/**
- * Monday of the week containing dateISO (Mon–Sun week). The original
- * RangeUpToDate / RangeAMPM forms compute From as today − DayOfWeek + 1
- * (RangeUpToDate.cs RangeAMPM_Load, RangeAMPM.cs RangeAMPM_Load) — the
- * same Monday for Mon–Sat; on a Sunday the literal formula lands on
- * tomorrow (an empty range), so the Monday of the week just ended is
- * used instead.
- */
 function mondayStart(dateISO: string): string {
   const d = new Date(`${dateISO}T12:00:00`);
   const dow = d.getDay(); // 0 = Sunday
@@ -67,7 +53,6 @@ function mondayStart(dateISO: string): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** "To" session of the original forms: AM while the hour is 0–11, else PM. */
 function clockSession(): 'AM' | 'PM' {
   return new Date().getHours() <= 11 ? 'AM' : 'PM';
 }
@@ -77,18 +62,14 @@ const sessRank = (s: 'AM' | 'PM') => (s === 'AM' ? 0 : 1);
 export default function Reports(p: Props) {
   const { t } = useLang();
   const [tab, setTab] = useState<Tab>(p.initialTab ?? 'current');
-  // Range / Range AMPM / Up to Date default to week-to-date (Mon → today,
-  // D6) when the menu passes no explicit range; an explicit initialRange
-  // (e.g. Report → Range, one day) is kept as-is.
   const [from, setFrom] = useState(p.initialRange?.from ?? mondayStart(todayISO()));
   const [to, setTo] = useState(p.initialRange?.to ?? todayISO());
   const [fromSess, setFromSess] = useState<'AM' | 'PM'>(p.initialRange?.fromSess ?? 'AM');
   const [toSess, setToSess] = useState<'AM' | 'PM'>(p.initialRange?.toSess ?? clockSession());
   const [selSide, setSelSide] = useState<'bet' | 'carry'>(p.initialPerson?.side ?? 'bet');
   const [selPerson, setSelPerson] = useState(p.initialPerson?.no ?? '');
-  // Up to Date is one fighter only, default fighter "1"
-  // (RangeUpToDate.cs RangeAMPM_Load: cboF.Text = "1").
   const [utdPerson, setUtdPerson] = useState('1');
+  const [showPreview, setShowPreview] = useState(false);
 
   const luckyMap = useMemo(() => {
     const m = new Map<string, string>();
@@ -96,8 +77,6 @@ export default function Reports(p: Props) {
     return m;
   }, [p.lucky]);
 
-  // BetDateTime per (side, person, day, session): the earliest-sno code
-  // row for that session (D7). DetailRow has no timestamp of its own.
   const betDateTimeMap = useMemo(() => {
     const m = new Map<string, { sno: number; stamp: string }>();
     (p.codes ?? []).forEach((c) => {
@@ -107,6 +86,14 @@ export default function Reports(p: Props) {
     });
     return m;
   }, [p.codes]);
+
+  const selPeople = useMemo(
+    () => p.people.filter((x) => (selSide === 'bet' ? x.side === 'fighter' : x.side === 'owner')),
+    [p.people, selSide],
+  );
+  const fighters = useMemo(() => p.people.filter((x) => x.side === 'fighter'), [p.people]);
+
+  const effectivePerson = selPerson || p.initialPerson?.no || (selPeople[0]?.no ?? '');
 
   const filtered = useMemo(() => {
     const inRange = (d: DetailRow): boolean => {
@@ -122,16 +109,12 @@ export default function Reports(p: Props) {
         if (d.betDay === to && sessRank(d.session) > sessRank(toSess)) return false;
         return true;
       }
-      // selected: all dates, one person
-      if (!selPerson) return false;
-      return d.personNo === selPerson;
+      if (!effectivePerson) return false;
+      return d.personNo === effectivePerson;
     };
     return p.details.filter(inRange);
-  }, [p, tab, from, to, fromSess, toSess, selPerson]);
+  }, [p, tab, from, to, fromSess, toSess, effectivePerson]);
 
-  // Per-session settlement (D7): one row per (person, BetDay, session),
-  // not one collapsed row per person — settlePerson per session via the
-  // shared §7.1 formula; commission/rate are MAX per session.
   const settle = (side: 'bet' | 'carry'): Row[] => {
     const byPerson = new Map<string, Map<string, DetailRow[]>>();
     filtered
@@ -179,68 +162,178 @@ export default function Reports(p: Props) {
 
   const fighterRows = settle('bet');
   const ownerRows = settle('carry');
-  // Up to Date: one fighter only (RangeUpToDate fills bRange for cboF
-  // only; the original's cRange is never filled, so no Owner half).
   const upToDateRows = fighterRows.filter((r) => r.personNo === utdPerson);
-  const selPeople = p.people.filter((x) => (selSide === 'bet' ? x.side === 'fighter' : x.side === 'owner'));
-  const fighters = p.people.filter((x) => x.side === 'fighter');
 
-  const tabs: { id: Tab; label: string }[] = [
-    { id: 'current', label: t('reports.tab.current') },
-    { id: 'daily', label: t('reports.tab.daily') },
-    { id: 'weekly', label: t('reports.tab.weekly') },
-    { id: 'range', label: t('reports.tab.range') },
+
+  // Aggregated KPIs across active view
+  const activeReportRows = useMemo(() => {
+    if (tab === 'uptodate') return upToDateRows;
+    return [...fighterRows, ...ownerRows];
+  }, [tab, upToDateRows, fighterRows, ownerRows]);
+
+  const kpis = useMemo(() => {
+    const totalAmount = activeReportRows.reduce((sum, r) => sum + r.amount, 0);
+    const totalWin = activeReportRows.reduce((sum, r) => sum + r.winAmt, 0);
+    const totalNet = activeReportRows.reduce((sum, r) => sum + r.netAmount, 0);
+    const uniquePersons = new Set(activeReportRows.map((r) => r.personNo)).size;
+    return { totalAmount, totalWin, totalNet, uniquePersons, totalRows: activeReportRows.length };
+  }, [activeReportRows]);
+
+  const tabs: { id: Tab; label: string; shortcut?: string }[] = [
+    { id: 'current', label: t('reports.tab.current'), shortcut: 'F9' },
+    { id: 'daily', label: t('reports.tab.daily'), shortcut: 'F10' },
+    { id: 'weekly', label: t('reports.tab.weekly'), shortcut: 'F11' },
+    { id: 'range', label: t('reports.tab.range'), shortcut: 'F12' },
     { id: 'uptodate', label: t('reports.tab.uptodate') },
-    { id: 'selected', label: t('reports.tab.selected') },
+    { id: 'selected', label: t('reports.tab.selected'), shortcut: 'F4' },
   ];
 
-  const renderTable = (title: string, rows: Row[]) => {
+  const applyPreset = (preset: 'today' | 'week' | 'month') => {
+    const today = todayISO();
+    if (preset === 'today') {
+      setFrom(today);
+      setTo(today);
+      setFromSess('AM');
+      setToSess('PM');
+    } else if (preset === 'week') {
+      setFrom(mondayStart(today));
+      setTo(today);
+      setFromSess('AM');
+      setToSess('PM');
+    } else if (preset === 'month') {
+      const firstDay = `${today.slice(0, 8)}01`;
+      setFrom(firstDay);
+      setTo(today);
+      setFromSess('AM');
+      setToSess('PM');
+    }
+  };
+
+  const renderTable = (title: string, rows: Row[], theme: 'indigo' | 'amber') => {
     const tot = rows.reduce(
       (a, r) => ({ amount: a.amount + r.amount, winAmt: a.winAmt + r.winAmt, net: a.net + r.netAmount }),
       { amount: 0, winAmt: 0, net: 0 },
     );
+
+    const isIndigo = theme === 'indigo';
+
     return (
-      <section className="card-pad print-area">
-        <h3 className="text-base font-bold text-slate-800">{title}</h3>
+      <section
+        className={`flex flex-col overflow-hidden rounded-xl border border-slate-300 bg-white shadow-xs print:border-none print:shadow-none ${
+          isIndigo ? 'border-t-4 border-t-indigo-600' : 'border-t-4 border-t-amber-600'
+        }`}
+      >
+        {/* Card Header */}
+        <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/80 px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <span
+              className={`inline-block h-2.5 w-2.5 rounded-full ${isIndigo ? 'bg-indigo-600' : 'bg-amber-600'}`}
+            />
+            <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">{title}</h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-slate-200/80 px-2 py-0.5 text-[10px] font-extrabold text-slate-700">
+              {rows.length} rows
+            </span>
+            <span className="font-mono text-xs font-black text-slate-900">
+              {fmt(tot.amount)} Ks
+            </span>
+          </div>
+        </div>
+
+        {/* Table Body */}
         {rows.length === 0 ? (
-          <p className="mt-1 text-sm text-slate-400">{t('reports.table.empty')}</p>
+          <div className="flex h-40 flex-col items-center justify-center p-6 text-center text-xs text-slate-400">
+            <span className="text-2xl">📊</span>
+            <p className="mt-1.5">{t('reports.table.empty')}</p>
+          </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="mt-1 w-full min-w-[640px] text-sm">
+            <table className="w-full text-xs">
               <thead>
-                <tr className="border-b text-left text-slate-500">
-                  <th className="py-1">{t('reports.col.person')}</th>
-                  <th>{t('reports.col.betDateTime')}</th>
-                  <th className="text-right">{t('reports.col.amount')}</th>
-                  <th>{t('reports.col.winNo')}</th>
-                  <th className="text-right">{t('reports.col.winAmt')}</th>
-                  <th className="text-right">{t('reports.col.com')}</th>
-                  <th className="text-right">{t('reports.col.rate')}</th>
-                  <th className="text-right">{t('reports.col.netAmount')}</th>
+                <tr className="border-b border-slate-200 bg-slate-100/70 font-semibold text-slate-600">
+                  <th className="px-2 py-2 text-left">{t('reports.col.person')}</th>
+                  <th className="px-2 py-2 text-left">{t('reports.col.betDateTime')}</th>
+                  <th className="px-2 py-2 text-right">{t('reports.col.amount')}</th>
+                  <th className="px-1 py-2 text-center">{t('reports.col.winNo')}</th>
+                  <th className="px-2 py-2 text-right">{t('reports.col.winAmt')}</th>
+                  <th className="px-1 py-2 text-right">{t('reports.col.com')}</th>
+                  <th className="px-1 py-2 text-right">{t('reports.col.rate')}</th>
+                  <th className="px-2 py-2 text-right">{t('reports.col.netAmount')}</th>
                 </tr>
               </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={`${r.personNo}|${r.betDay}|${r.session}`} className="border-b">
-                    <td className="py-1 font-bold">{r.personNo}</td>
-                    <td className="text-xs">{r.betDateTime}</td>
-                    <td className="text-right">{fmt(r.amount)}</td>
-                    <td>{r.winNo}</td>
-                    <td className="text-right">{fmt(r.winAmt)}</td>
-                    <td className="text-right">{r.com}</td>
-                    <td className="text-right">{r.rate}</td>
-                    <td className={`text-right font-bold ${r.netAmount < 0 ? 'text-red-600' : ''}`}>{fmt(r.netAmount)}</td>
-                  </tr>
-                ))}
-                <tr className="font-bold">
-                  <td className="py-1">{t('reports.col.total')}</td>
+              <tbody className="divide-y divide-slate-100">
+                {rows.map((r) => {
+                  const hasWon = r.winAmt > 0;
+                  return (
+                    <tr
+                      key={`${r.personNo}|${r.betDay}|${r.session}`}
+                      className={`transition-colors hover:bg-slate-50/80 ${
+                        hasWon ? 'bg-emerald-50/50' : ''
+                      }`}
+                    >
+                      <td className="px-2 py-1.5">
+                        <span className="font-mono font-black text-slate-900">{r.personNo}</span>
+                      </td>
+                      <td className="px-2 py-1.5 font-mono text-[10px] text-slate-500 whitespace-nowrap">
+                        {r.betDateTime}
+                      </td>
+                      <td className="px-2 py-1.5 text-right font-mono font-bold text-slate-900">
+                        {fmt(r.amount)}
+                      </td>
+                      <td className="px-1 py-1.5 text-center">
+                        {r.winNo !== '—' ? (
+                          <span className="rounded bg-emerald-100 px-1 py-0.5 font-mono text-[11px] font-black text-emerald-800">
+                            {r.winNo}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td
+                        className={`px-2 py-1.5 text-right font-mono font-bold ${
+                          hasWon ? 'text-emerald-700' : 'text-slate-600'
+                        }`}
+                      >
+                        {fmt(r.winAmt)}
+                      </td>
+                      <td className="px-1 py-1.5 text-right font-mono text-slate-600">{r.com}%</td>
+                      <td className="px-1 py-1.5 text-right font-mono text-slate-600">{r.rate}</td>
+                      <td
+                        className={`px-2 py-1.5 text-right font-mono text-xs font-black ${
+                          r.netAmount < 0 ? 'text-red-600' : 'text-emerald-700'
+                        }`}
+                      >
+                        {fmt(r.netAmount)}
+                      </td>
+                    </tr>
+                  );
+                })}
+
+                {/* Grand Total Footer */}
+                <tr className="border-t-2 border-slate-300 bg-slate-100/90 font-bold text-slate-900">
+                  <td className="px-2 py-2 font-black uppercase tracking-wider">
+                    {t('reports.col.total')}
+                  </td>
+                  <td className="px-2 py-2 text-[10px] text-slate-500 font-normal">
+                    {rows.length} sessions
+                  </td>
+                  <td className="px-2 py-2 text-right font-mono text-xs font-black text-slate-900">
+                    {fmt(tot.amount)}
+                  </td>
                   <td />
-                  <td className="text-right">{fmt(tot.amount)}</td>
+                  <td className="px-2 py-2 text-right font-mono text-xs font-black text-emerald-700">
+                    {fmt(tot.winAmt)}
+                  </td>
                   <td />
-                  <td className="text-right">{fmt(tot.winAmt)}</td>
                   <td />
-                  <td />
-                  <td className={`text-right ${tot.net < 0 ? 'text-red-600' : ''}`}>{fmt(tot.net)}</td>
+                  <td
+                    className={`px-2 py-2 text-right font-mono text-xs font-black ${
+                      tot.net < 0 ? 'text-red-600' : 'text-emerald-700'
+                    }`}
+                  >
+                    {fmt(tot.net)}
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -251,99 +344,357 @@ export default function Reports(p: Props) {
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {/* View-Only Announcement Banner */}
       {p.viewOnly && (
-        <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-bold text-amber-800">
-          {t('reports.viewOnly')}
-        </p>
+        <div className="flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs font-bold text-amber-900 shadow-xs">
+          <span className="text-base">🔒</span>
+          <span>{t('reports.viewOnly')}</span>
+        </div>
       )}
-      <div className="no-print flex flex-wrap items-center gap-2">
-        {tabs.map((tb) => (
+
+      {/* Navigation Tabs Bar */}
+      <div className="no-print flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/90 bg-slate-50/80 p-2">
+        <div className="flex flex-wrap items-center gap-1">
+          {tabs.map((tb) => {
+            const isActive = tab === tb.id;
+            return (
+              <button
+                key={tb.id}
+                type="button"
+                onClick={() => setTab(tb.id)}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
+                  isActive
+                    ? 'bg-slate-900 text-white shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-200/80 hover:text-slate-900'
+                }`}
+              >
+                <span>{tb.label}</span>
+                {tb.shortcut && (
+                  <span
+                    className={`rounded px-1 py-0.2 text-[9px] font-mono font-extrabold ${
+                      isActive ? 'bg-slate-800 text-slate-200' : 'bg-slate-200 text-slate-600'
+                    }`}
+                  >
+                    {tb.shortcut}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center gap-2">
           <button
-            key={tb.id}
             type="button"
-            onClick={() => setTab(tb.id)}
-            className={`btn ${tab === tb.id ? 'btn-primary' : 'btn-outline'}`}
+            onClick={() => setShowPreview(true)}
+            className="flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700 shadow-xs hover:border-indigo-300 hover:bg-indigo-100 active:bg-indigo-200"
+            title={t('reports.printPreview')}
           >
-            {tb.label}
+            <Icon8 name="document" size={15} />
+            <span>{t('reports.printPreview')}</span>
           </button>
-        ))}
-        <button type="button" onClick={() => window.print()} className="btn btn-dark ml-auto">
-          {t('reports.print')}
-        </button>
+
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-xs hover:border-slate-400 hover:bg-slate-50 active:bg-slate-100"
+          >
+            <Icon8 name="print" size={15} />
+            <span>{t('reports.print')}</span>
+          </button>
+        </div>
       </div>
 
+      {/* Dynamic Filter Controls Toolbar */}
       {(tab === 'range' || tab === 'uptodate') && (
-        <div className="card-pad no-print flex flex-wrap items-end gap-3">
-          {tab === 'uptodate' && (
-            <label className="text-sm font-medium text-slate-600">
-              {t('reports.fighterLabel')}
-              <select
-                className="input ml-2"
-                value={utdPerson}
-                onChange={(e) => setUtdPerson(e.target.value)}
-              >
-                {fighters.map((x) => (
-                  <option key={x.id} value={x.no}>{x.no}</option>
+        <div className="no-print flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-xs">
+          <div className="flex flex-wrap items-center gap-3">
+            {tab === 'uptodate' && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-600">{t('reports.fighterLabel')}:</span>
+                <select
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-900 focus:border-indigo-500 focus:outline-none"
+                  value={utdPerson}
+                  onChange={(e) => setUtdPerson(e.target.value)}
+                >
+                  {fighters.map((x) => (
+                    <option key={x.id} value={x.no}>
+                      #{x.no} {x.name ? `— ${x.name}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* From Date & Session */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold text-slate-500">{t('reports.from')}</span>
+              <input
+                type="date"
+                className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 font-mono text-xs font-bold text-slate-900 focus:border-indigo-500 focus:outline-none"
+                value={from}
+                onChange={(e) => setFrom(e.target.value)}
+              />
+              <div className="flex rounded-md border border-slate-300 bg-slate-50 p-0.5">
+                {(['AM', 'PM'] as const).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setFromSess(s)}
+                    className={`rounded px-2 py-0.5 text-[10px] font-bold ${
+                      fromSess === s ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    {s}
+                  </button>
                 ))}
-              </select>
-            </label>
-          )}
-          <label className="text-sm font-medium text-slate-600">
-            {t('reports.from')}
-            <input type="date" className="input ml-2" value={from} onChange={(e) => setFrom(e.target.value)} />
-          </label>
-          <select className="input" value={fromSess} onChange={(e) => setFromSess(e.target.value as 'AM' | 'PM')}>
-            <option value="AM">AM</option>
-            <option value="PM">PM</option>
-          </select>
-          <label className="text-sm font-medium text-slate-600">
-            {t('reports.to')}
-            <input type="date" className="input ml-2" value={to} onChange={(e) => setTo(e.target.value)} />
-          </label>
-          <select className="input" value={toSess} onChange={(e) => setToSess(e.target.value as 'AM' | 'PM')}>
-            <option value="AM">AM</option>
-            <option value="PM">PM</option>
-          </select>
+              </div>
+            </div>
+
+            <span className="text-slate-400">→</span>
+
+            {/* To Date & Session */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold text-slate-500">{t('reports.to')}</span>
+              <input
+                type="date"
+                className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 font-mono text-xs font-bold text-slate-900 focus:border-indigo-500 focus:outline-none"
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+              />
+              <div className="flex rounded-md border border-slate-300 bg-slate-50 p-0.5">
+                {(['AM', 'PM'] as const).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setToSess(s)}
+                    className={`rounded px-2 py-0.5 text-[10px] font-bold ${
+                      toSess === s ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Quick presets */}
+          <div className="flex items-center gap-1 text-xs">
+            <span className="text-[11px] text-slate-400">Presets:</span>
+            <button
+              type="button"
+              onClick={() => applyPreset('today')}
+              className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100"
+            >
+              ယနေ့
+            </button>
+            <button
+              type="button"
+              onClick={() => applyPreset('week')}
+              className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100"
+            >
+              ဤအပတ်
+            </button>
+            <button
+              type="button"
+              onClick={() => applyPreset('month')}
+              className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100"
+            >
+              ဤလ
+            </button>
+          </div>
         </div>
       )}
 
       {tab === 'selected' && (
-        <div className="card-pad no-print flex flex-wrap items-end gap-3">
-          <select className="input" value={selSide} onChange={(e) => { setSelSide(e.target.value as 'bet' | 'carry'); setSelPerson(''); }}>
-            <option value="bet">{t('reports.selFighter')}</option>
-            <option value="carry">{t('reports.selOwner')}</option>
-          </select>
-          <select className="input" value={selPerson} onChange={(e) => setSelPerson(e.target.value)}>
-            <option value="">{t('reports.pickPerson')}</option>
+        <div className="no-print flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-xs">
+          {/* Side Toggle */}
+          <div className="flex rounded-lg border border-slate-300 bg-slate-50 p-0.5">
+            <button
+              type="button"
+              onClick={() => {
+                setSelSide('bet');
+                setSelPerson('');
+              }}
+              className={`rounded-md px-3 py-1 text-xs font-bold ${
+                selSide === 'bet' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              {t('reports.selFighter')}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSelSide('carry');
+                setSelPerson('');
+              }}
+              className={`rounded-md px-3 py-1 text-xs font-bold ${
+                selSide === 'carry' ? 'bg-amber-600 text-white' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              {t('reports.selOwner')}
+            </button>
+          </div>
+
+          {/* Person Selector */}
+          <select
+            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-900 focus:border-indigo-500 focus:outline-none"
+            value={effectivePerson}
+            onChange={(e) => setSelPerson(e.target.value)}
+          >
             {selPeople.map((x) => (
-              <option key={x.id} value={x.no}>{x.no}</option>
+              <option key={x.id} value={x.no}>
+                #{x.no} {x.name ? `— ${x.name}` : ''}
+              </option>
             ))}
           </select>
-          <span className="text-sm text-slate-500">{t('reports.allDates')}</span>
+
+          <span className="text-xs text-slate-500">
+            {selPerson ? `ရက်စွဲအားလုံး စုစည်းချက်` : t('reports.allDates')}
+          </span>
         </div>
       )}
 
-      <p className="text-sm text-slate-500">
-        {tab === 'current' && t('reports.desc.current', { day: p.betDay, session: p.session })}
-        {tab === 'daily' && t('reports.desc.daily', { day: p.betDay })}
-        {tab === 'weekly' &&
-          t('reports.desc.weekly', { day: p.betDay, from: weekBounds(p.betDay).from, to: weekBounds(p.betDay).to })}
-        {tab === 'range' && t('reports.desc.range', { from, fromSess, to, toSess })}
-        {tab === 'uptodate' && t('reports.desc.uptodate', { no: utdPerson, from, fromSess, to, toSess })}
-        {tab === 'selected' &&
-          (selPerson
-            ? t('reports.desc.selected', { side: selSide === 'bet' ? t('reports.selFighter') : t('reports.selOwner'), no: selPerson })
-            : t('reports.desc.selectedPick'))}
-      </p>
-
-      {tab === 'uptodate' ? (
-        <div className="grid gap-3 lg:grid-cols-2">{renderTable(t('reports.table.uptodate', { no: utdPerson }), upToDateRows)}</div>
-      ) : (
-        <div className="grid gap-3 lg:grid-cols-2">
-          {renderTable(t('reports.table.fighterBet'), fighterRows)}
-          {renderTable(t('reports.table.ownerCarry'), ownerRows)}
+      {/* Scope Description Banner */}
+      <div className="flex items-center justify-between text-xs text-slate-500">
+        <div className="flex items-center gap-2">
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-slate-400" />
+          <span className="font-medium">
+            {tab === 'current' && t('reports.desc.current', { day: p.betDay, session: p.session })}
+            {tab === 'daily' && t('reports.desc.daily', { day: p.betDay })}
+            {tab === 'weekly' &&
+              t('reports.desc.weekly', {
+                day: p.betDay,
+                from: weekBounds(p.betDay).from,
+                to: weekBounds(p.betDay).to,
+              })}
+            {tab === 'range' && t('reports.desc.range', { from, fromSess, to, toSess })}
+            {tab === 'uptodate' &&
+              t('reports.desc.uptodate', { no: utdPerson, from, fromSess, to, toSess })}
+            {tab === 'selected' &&
+              t('reports.desc.selected', {
+                side: selSide === 'bet' ? t('reports.selFighter') : t('reports.selOwner'),
+                no: effectivePerson,
+              })}
+          </span>
         </div>
+      </div>
+
+      {/* KPI Overview Ribbon */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        {/* Total Bets */}
+        <div className="rounded-xl border border-slate-200/90 bg-white p-3 shadow-xs">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            {t('reports.col.amount')} စုစုပေါင်း
+          </div>
+          <div className="mt-1 font-mono text-lg font-black text-slate-900">
+            {fmt(kpis.totalAmount)}{' '}
+            <span className="text-xs font-normal text-slate-500">Ks</span>
+          </div>
+          <div className="mt-0.5 text-[10px] text-slate-400">{kpis.totalRows} sessions total</div>
+        </div>
+
+        {/* Total Win Payout */}
+        <div className="rounded-xl border border-slate-200/90 bg-white p-3 shadow-xs">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            {t('reports.col.winAmt')} စုစုပေါင်း
+          </div>
+          <div className="mt-1 font-mono text-lg font-black text-emerald-700">
+            {fmt(kpis.totalWin)}{' '}
+            <span className="text-xs font-normal text-slate-500">Ks</span>
+          </div>
+          <div className="mt-0.5 text-[10px] text-slate-400">Winning payouts</div>
+        </div>
+
+        {/* Net Balance */}
+        <div
+          className={`rounded-xl border p-3 shadow-xs ${
+            kpis.totalNet >= 0
+              ? 'border-emerald-200 bg-emerald-50/50'
+              : 'border-red-200 bg-red-50/50'
+          }`}
+        >
+          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
+            {t('reports.col.netAmount')}
+          </div>
+          <div
+            className={`mt-1 font-mono text-lg font-black ${
+              kpis.totalNet >= 0 ? 'text-emerald-700' : 'text-red-600'
+            }`}
+          >
+            {fmt(kpis.totalNet)}{' '}
+            <span className="text-xs font-normal text-slate-500">Ks</span>
+          </div>
+          <div className="mt-0.5 text-[10px] text-slate-500">
+            {kpis.totalNet >= 0 ? 'အမြတ် (Profitable)' : 'အရှုံး (Deficit)'}
+          </div>
+        </div>
+
+        {/* Active People Count */}
+        <div className="rounded-xl border border-slate-200/90 bg-white p-3 shadow-xs">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            ပါဝင်သူ ဦးရေ
+          </div>
+          <div className="mt-1 font-mono text-lg font-black text-slate-800">
+            {kpis.uniquePersons}{' '}
+            <span className="text-xs font-normal text-slate-500">ဦး</span>
+          </div>
+          <div className="mt-0.5 text-[10px] text-slate-400">Active participants</div>
+        </div>
+      </div>
+
+      {/* Tables Display */}
+      {tab === 'uptodate' ? (
+        <div className="grid gap-4">
+          {renderTable(t('reports.table.uptodate', { no: utdPerson }), upToDateRows, 'indigo')}
+        </div>
+      ) : tab === 'selected' ? (
+        <div className="grid gap-4">
+          {selSide === 'bet'
+            ? renderTable(t('reports.table.fighterBet'), fighterRows, 'indigo')
+            : renderTable(t('reports.table.ownerCarry'), ownerRows, 'amber')}
+        </div>
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {renderTable(t('reports.table.fighterBet'), fighterRows, 'indigo')}
+          {renderTable(t('reports.table.ownerCarry'), ownerRows, 'amber')}
+        </div>
+      )}
+
+      {/* Print Preview Document Modal */}
+      {showPreview && (
+        <PrintPreviewModal
+          reportTitle="EASY 2D Pro"
+          reportSubtitle={
+            tab === 'current'
+              ? t('reports.desc.current', { day: p.betDay, session: p.session })
+              : tab === 'daily'
+                ? t('reports.desc.daily', { day: p.betDay })
+                : tab === 'weekly'
+                  ? t('reports.desc.weekly', {
+                      day: p.betDay,
+                      from: weekBounds(p.betDay).from,
+                      to: weekBounds(p.betDay).to,
+                    })
+                  : tab === 'range'
+                    ? t('reports.desc.range', { from, fromSess, to, toSess })
+                    : tab === 'uptodate'
+                      ? t('reports.desc.uptodate', { no: utdPerson, from, fromSess, to, toSess })
+                      : t('reports.desc.selected', {
+                          side: selSide === 'bet' ? t('reports.selFighter') : t('reports.selOwner'),
+                          no: effectivePerson,
+                        })
+          }
+          betDay={p.betDay}
+          session={p.session}
+          luckyNo={luckyMap.get(`${p.betDay}|${p.session}`) ?? null}
+          kpis={kpis}
+          fighterRows={tab === 'uptodate' ? upToDateRows : fighterRows}
+          ownerRows={tab === 'uptodate' || (tab === 'selected' && selSide === 'bet') ? [] : ownerRows}
+          onClose={() => setShowPreview(false)}
+        />
       )}
     </div>
   );

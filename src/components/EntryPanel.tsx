@@ -5,6 +5,7 @@ import type { Person } from '../lib/db';
 import type { EntryRow } from '../lib/types';
 import { fmt } from '../lib/types';
 import { ConfirmDialog } from './Dialogs';
+import { Icon8 } from './Icons8';
 
 interface Props {
   side: 'bet' | 'carry';
@@ -19,33 +20,18 @@ interface Props {
   rows: EntryRow[];
   onAdd: (code: string, amount: string) => boolean;
   onDeleteRow: (id: string) => void;
-  /** Inline row editor (original LoadGroupBox / txtNoEdit + txtAmtEdit). */
   onEditRow: (id: string, code: string, amount: string) => boolean;
   onClear: () => void;
   onSave: () => void;
   accent: 'indigo' | 'amber';
-  /** Ref so F3 (Fighter) / F6 (Carry) can focus the code box. */
   codeInputRef?: MutableRefObject<HTMLInputElement | null>;
-  /** Ref to the person text box — the original F3/F6 focus cboF/cboO (D16). */
   personSelectRef?: MutableRefObject<HTMLInputElement | null>;
-  /** Extra small fields shown above the Carry grid (Ft / No / Tk). */
   extraTop?: React.ReactNode;
-  /** "Order" toggles grid sort; "..." browses this person's saved codes. */
   onOrder: () => void;
   onDots: () => void;
-  /** Open smart chat ingestion dialog */
   onOpenChatIngest?: () => void;
 }
 
-/**
- * Original grid display for exclusion codes (MDIMain.cs:6898-6907,
- * gF/gO Cells[1]): "-" is shown as " (-) " EXCEPT when it sits in the
- * first two characters, which the original returns verbatim — so "12-34"
- * shows as "12 (-) 34" but "1-2" stays "1-2", exactly as the original.
- * (A probe once flagged "1-2" as wrong; it is not — the decompiled
- * IIf branch preserves the prefix dash by design.)
- * The stored codeNo keeps the plain "-" form.
- */
 export function formatDisplayCode(text: string): string {
   const dash = (s: string) => s.split('-').join(' (-) ');
   if (text.includes('F-') || text.includes('B-')) {
@@ -57,28 +43,6 @@ export function formatDisplayCode(text: string): string {
   return dash(text);
 }
 
-/**
- * Entry panel in the original EASY main-screen style: person dropdown +
- * Order + "..." on top, grid (# / No / Amount), code + amount inputs,
- * commission/rate, total, Save / Clear.
- *
- * Keyboard loop — decompiled from MDIMain.cs (txtNoF/txtAmtF/gF and the
- * txtNoO/txtAmtO/gO mirrors, plus MDIMain_KeyDown):
- * - Enter in the code box: code present + amount empty -> focus the amount
- *   box; both present -> add the row and focus returns to the code box.
- * - Enter in the amount box: empty/zero code or amount -> focus the code
- *   box; otherwise add the row, clear both boxes, focus the code box.
- * - "." in the amount box -> back to the code box (suppress the key).
- * - Up in the code box (1-2 digit code, amount present) -> submit (add).
- * - Down in the code box (2-digit code, amount present) -> append "+" to
- *   the code and submit (add with reverse).
- * - F3 (Fighter) / F6 (Carry) or "." in the code box -> save (cmdSaveF/O).
- * - Del in the grid -> delete the selected row; F2 in the grid (or the
- *   code box) -> open the inline row editor for the selected/last row;
- *   double-click a row also opens it.
- * F3/F6 pressed anywhere else (e.g. in the amount box) are handled by the
- * form-level handler in App.tsx, which focuses the person dropdown.
- */
 export default function EntryPanel(p: Props) {
   const { t } = useLang();
   const [code, setCode] = useState('');
@@ -99,7 +63,6 @@ export default function EntryPanel(p: Props) {
   const [askNewPersonNo, setAskNewPersonNo] = useState<string | null>(null);
   const lastValidPersonNo = useRef(p.personNo);
 
-  // Keep track of the last known valid person number from the people list
   if (p.people.some((x) => x.no === p.personNo && x.no.trim() !== '')) {
     lastValidPersonNo.current = p.personNo;
   }
@@ -113,7 +76,6 @@ export default function EntryPanel(p: Props) {
     amountRef.current?.select();
   };
 
-  /** Add one code+amount (the txtAmtF/txtAmtO Enter path). */
   const submit = (codeVal: string, amountVal: string): boolean => {
     const trimmedPerson = p.personNo.trim();
     if (trimmedPerson && !p.people.some((x) => x.no === trimmedPerson)) {
@@ -121,7 +83,6 @@ export default function EntryPanel(p: Props) {
       return false;
     }
     if (!codeVal.trim() || !amountVal.trim() || amountVal.trim() === '0') {
-      // Original: empty/zero -> back to the code box, nothing added.
       focusCode();
       return false;
     }
@@ -150,7 +111,7 @@ export default function EntryPanel(p: Props) {
   const saveEditor = () => {
     if (!editId) return;
     const ok = p.onEditRow(editId, editCode, editAmt);
-    if (!ok) return; // keep the editor open on an invalid code/amount
+    if (!ok) return;
     setEditId(null);
     focusCode();
   };
@@ -160,21 +121,19 @@ export default function EntryPanel(p: Props) {
   const onCodeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (!code.trim()) return; // original txtNoF: empty code -> nothing
+      if (!code.trim()) return;
       if (!amount.trim()) {
-        focusAmount(); // never silently does nothing
+        focusAmount();
         return;
       }
       submit(code, amount);
     } else if (e.key === 'ArrowUp') {
-      // Original: 1- or 2-digit code + amount present -> submit.
       const len = code.trim().length;
       if ((len === 1 || len === 2) && amount.trim()) {
         e.preventDefault();
         submit(code, amount);
       }
     } else if (e.key === 'ArrowDown') {
-      // Original: 2-digit code + amount present -> append "+" and submit.
       if (code.trim().length === 2 && amount.trim()) {
         e.preventDefault();
         const next = `${code.trim()}+`;
@@ -182,7 +141,6 @@ export default function EntryPanel(p: Props) {
         submit(next, amount);
       }
     } else if (e.key === saveKey || e.key === '.') {
-      // Original txtNoF/txtNoO: F3/F6 or "." saves (and clears the code box).
       e.preventDefault();
       e.stopPropagation();
       setCode('');
@@ -199,7 +157,6 @@ export default function EntryPanel(p: Props) {
       e.preventDefault();
       submit(code, amount);
     } else if (e.key === '.') {
-      // Original txtAmtF/txtAmtO: "." (main or numpad) -> back to code box.
       e.preventDefault();
       e.stopPropagation();
       focusCode();
@@ -223,17 +180,19 @@ export default function EntryPanel(p: Props) {
     [p.rows, sortMode],
   );
 
-  const accentBtn = p.accent === 'indigo' ? 'btn-primary' : 'btn-amber';
-  const yellowInput = 'input-yellow';
-
-
-
-  const topAccent = p.accent === 'indigo' ? 'border-t-2 border-t-indigo-600' : 'border-t-2 border-t-amber-600';
+  const isIndigo = p.accent === 'indigo';
+  const accentBtn = isIndigo ? 'btn-primary' : 'btn-amber';
 
   return (
-    <section className={`card flex flex-1 flex-col overflow-hidden ${topAccent}`}>
-      {/* Person row: dropdown + Order + Browse (original top row) */}
-      <div className="flex items-center gap-1 border-b border-slate-200 bg-slate-50 px-1.5 py-1">
+    <section className="card flex flex-1 flex-col overflow-hidden">
+      {/* Top Person Selection & Actions Bar */}
+      <div
+        className={`flex items-center gap-1.5 border-b px-2.5 py-2 ${
+          isIndigo
+            ? 'border-indigo-100 bg-gradient-to-r from-indigo-50/70 via-slate-50 to-white'
+            : 'border-amber-100 bg-gradient-to-r from-amber-50/70 via-slate-50 to-white'
+        }`}
+      >
         <input
           ref={(el) => {
             internalPersonRef.current = el;
@@ -241,7 +200,7 @@ export default function EntryPanel(p: Props) {
           }}
           type="text"
           list={`person-datalist-${p.side}`}
-          className="input-yellow h-8 min-w-0 flex-1 px-2 text-sm font-bold"
+          className="input-yellow h-8 min-w-0 flex-1 px-2.5 font-mono text-sm font-extrabold"
           placeholder={p.side === 'bet' ? 'Fighter No. (e.g. 1)' : 'Owner No. (e.g. 1)'}
           value={p.personNo}
           onChange={(e) => {
@@ -279,88 +238,103 @@ export default function EntryPanel(p: Props) {
             </option>
           ))}
         </datalist>
+
         <button
           type="button"
           onClick={() => {
             setSortMode((m) => (m === 'entry' ? 'code' : 'entry'));
             p.onOrder();
           }}
-          className={`btn btn-sm h-8 min-h-0 px-2.5 text-xs ${sortMode === 'code' ? 'btn-primary' : 'btn-outline'}`}
+          className={`btn btn-sm h-8 min-h-0 px-2.5 text-xs whitespace-nowrap ${
+            sortMode === 'code' ? 'btn-primary' : 'btn-outline'
+          }`}
           aria-pressed={sortMode === 'code'}
           title={t('entry.orderTitle')}
         >
-          {t('entry.order')}
+          <Icon8 name="sort" size={13} />
+          <span>{t('entry.order')}</span>
         </button>
+
         <button
           type="button"
           onClick={p.onDots}
-          className="btn btn-outline btn-sm h-8 min-h-0 px-2.5 text-xs"
+          className="btn btn-outline btn-sm h-8 min-h-0 px-2.5 text-xs whitespace-nowrap"
           title={t('entry.browseTitle')}
         >
-          {t('entry.browse')}
+          <Icon8 name="browse" size={13} />
+          <span>{t('entry.browse')}</span>
         </button>
+
         {p.onOpenChatIngest && (
           <button
             type="button"
             onClick={p.onOpenChatIngest}
-            className="btn btn-sm h-8 min-h-0 bg-indigo-600 px-2.5 text-xs font-bold text-white hover:bg-indigo-700"
+            className="btn btn-primary btn-sm h-8 min-h-0 px-2.5 text-xs font-bold whitespace-nowrap"
             title="Smart Chat Message Ingestion (Viber / Telegram / SMS)"
           >
-            📥 Chat
+            <Icon8 name="inbox" size={15} />
+            <span>Chat</span>
           </button>
         )}
       </div>
 
       {p.extraTop}
 
-      {/* Commission / rate — Enter in Com moves to Rate, Enter in Rate moves to the code box (original txtCommissionF/txtRateF). */}
-      <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50/50 px-2 py-1">
-        <label className="flex items-center gap-1 text-xs font-medium text-slate-600">
-          {t('entry.com')}
-          <input
-            ref={comRef}
-            type="number"
-            className="input h-7 w-14 px-1.5 py-0.5 text-xs font-semibold"
-            value={p.commission}
-            onChange={(e) => p.onCommissionChange(Number(e.target.value) || 0)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                rateRef.current?.focus();
-                rateRef.current?.select();
-              }
-            }}
-          />
-        </label>
-        <label className="flex items-center gap-1 text-xs font-medium text-slate-600">
-          {t('entry.rate')}
-          <input
-            ref={rateRef}
-            type="number"
-            className="input h-7 w-14 px-1.5 py-0.5 text-xs font-semibold"
-            value={p.rate}
-            onChange={(e) => p.onRateChange(Number(e.target.value) || 0)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                focusCode();
-              }
-            }}
-          />
-        </label>
-        <span className={`ml-auto rounded px-1.5 py-0.5 text-xs font-extrabold ${p.side === 'bet' ? 'bg-indigo-50 text-indigo-700' : 'bg-amber-50 text-amber-700'}`}>
+      {/* Commission / Rate Metadata Row */}
+      <div className="flex items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/60 px-2.5 py-1.5">
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+            <span>{t('entry.com')}</span>
+            <input
+              ref={comRef}
+              type="number"
+              className="input h-7 w-14 px-2 py-0.5 font-mono text-xs font-bold text-slate-900"
+              value={p.commission}
+              onChange={(e) => p.onCommissionChange(Number(e.target.value) || 0)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  rateRef.current?.focus();
+                  rateRef.current?.select();
+                }
+              }}
+            />
+          </label>
+          <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+            <span>{t('entry.rate')}</span>
+            <input
+              ref={rateRef}
+              type="number"
+              className="input h-7 w-14 px-2 py-0.5 font-mono text-xs font-bold text-slate-900"
+              value={p.rate}
+              onChange={(e) => p.onRateChange(Number(e.target.value) || 0)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  focusCode();
+                }
+              }}
+            />
+          </label>
+        </div>
+
+        <span
+          className={`text-xs font-extrabold tracking-tight ${
+            p.side === 'bet' ? 'text-indigo-700' : 'text-amber-700'
+          }`}
+        >
           {p.side === 'bet' ? t('entry.bet') : t('entry.carry')}
         </span>
       </div>
 
-      {/* Code + amount (the yellow boxes, as in the original) */}
-      <div className="flex items-center gap-1.5 px-2 py-1.5">
+      {/* Code + Amount Operator Command Bar */}
+      <div className="flex items-center gap-1.5 bg-white px-2.5 py-2">
         <input
           ref={(el) => {
             codeRef.current = el;
             if (p.codeInputRef) p.codeInputRef.current = el;
           }}
-          className={`${yellowInput} h-9 min-w-0 flex-1 px-2 text-sm uppercase`}
+          className="input-yellow h-9 min-w-0 flex-1 px-2.5 font-mono text-sm uppercase"
           placeholder={t('entry.codePlaceholder')}
           value={code}
           onChange={(e) => {
@@ -372,7 +346,7 @@ export default function EntryPanel(p: Props) {
         />
         <input
           ref={amountRef}
-          className={`${yellowInput} h-9 w-24 px-2 text-sm`}
+          className="input-yellow h-9 w-24 px-2.5 font-mono text-sm tabular-nums"
           placeholder={t('entry.amountPlaceholder')}
           inputMode="numeric"
           value={amount}
@@ -386,25 +360,25 @@ export default function EntryPanel(p: Props) {
         <button
           type="button"
           onClick={() => submit(code, amount)}
-          className={`btn btn-sm h-9 min-h-0 px-3 text-xs ${accentBtn}`}
+          className={`btn btn-sm h-9 min-h-0 px-3.5 text-xs font-bold whitespace-nowrap ${accentBtn}`}
         >
           {t('entry.add')}
         </button>
       </div>
-      {invalid && <p className="px-2 pb-1 text-xs text-red-600">{t('entry.invalid')}</p>}
+      {invalid && <p className="px-2.5 pb-1 text-xs font-semibold text-rose-600">{t('entry.invalid')}</p>}
 
-      {/* Grid: # / No / Amount (original columns) */}
-      <div className="min-h-[150px] flex-1 overflow-y-auto border-t border-slate-200">
+      {/* Active Entry Grid: # / No / Amount */}
+      <div className="min-h-[155px] flex-1 overflow-y-auto border-t border-slate-200/90 bg-white">
         <table className="w-full text-sm">
-          <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-100">
-            <tr className="text-left text-xs font-semibold text-slate-600">
-              <th className="w-8 px-2 py-1">{t('entry.colNum')}</th>
-              <th className="px-2 py-1">{t('entry.colNo')}</th>
-              <th className="px-2 py-1 text-right">{t('entry.colAmount')}</th>
+          <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50/95 backdrop-blur-xs">
+            <tr className="text-left text-xs font-bold text-slate-600">
+              <th className="w-8 px-2.5 py-1.5 font-mono">{t('entry.colNum')}</th>
+              <th className="px-2 py-1.5">{t('entry.colNo')}</th>
+              <th className="px-2.5 py-1.5 text-right">{t('entry.colAmount')}</th>
               <th className="w-8" />
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-slate-100">
             {shownRows.map((r, i) => (
               <tr
                 key={r.id}
@@ -412,14 +386,16 @@ export default function EntryPanel(p: Props) {
                 onClick={() => setSelectedId(r.id)}
                 onDoubleClick={() => openEditor(r.id)}
                 onKeyDown={(e) => onGridKeyDown(e, r)}
-                className={`cursor-pointer border-t border-slate-100 outline-none focus:bg-indigo-50 ${selectedId === r.id ? 'bg-indigo-100' : ''}`}
+                className={`cursor-pointer outline-none transition-colors focus:bg-indigo-50/70 ${
+                  selectedId === r.id ? 'bg-indigo-50 font-semibold' : 'hover:bg-slate-50/80'
+                }`}
               >
-                <td className="px-2 py-1 text-xs text-slate-400">{i + 1}</td>
+                <td className="px-2.5 py-1 font-mono text-xs text-slate-400">{i + 1}</td>
                 {editId === r.id ? (
                   <>
-                    <td className="px-1 py-1">
+                    <td className="px-1.5 py-1">
                       <input
-                        className="input-yellow h-7 w-full px-1.5 text-xs uppercase"
+                        className="input-yellow h-7 w-full px-1.5 font-mono text-xs uppercase"
                         value={editCode}
                         autoFocus
                         onChange={(e) => setEditCode(e.target.value)}
@@ -427,7 +403,10 @@ export default function EntryPanel(p: Props) {
                           if (e.key === 'Enter') {
                             e.preventDefault();
                             e.stopPropagation();
-                            (e.target as HTMLInputElement).closest('tr')?.querySelector<HTMLInputElement>('input[data-edit-amt]')?.focus();
+                            (e.target as HTMLInputElement)
+                              .closest('tr')
+                              ?.querySelector<HTMLInputElement>('input[data-edit-amt]')
+                              ?.focus();
                           } else if (e.key === 'Escape') {
                             e.stopPropagation();
                             setEditId(null);
@@ -437,10 +416,10 @@ export default function EntryPanel(p: Props) {
                         aria-label={t('entry.editCode')}
                       />
                     </td>
-                    <td className="px-1 py-1 text-right">
+                    <td className="px-1.5 py-1 text-right">
                       <input
                         data-edit-amt
-                        className="input-yellow h-7 w-20 px-1.5 text-right text-xs"
+                        className="input-yellow h-7 w-20 px-1.5 text-right font-mono text-xs"
                         value={editAmt}
                         inputMode="numeric"
                         onChange={(e) => setEditAmt(e.target.value)}
@@ -458,27 +437,36 @@ export default function EntryPanel(p: Props) {
                         aria-label={t('entry.editAmount')}
                       />
                     </td>
-                    <td className="py-1 pr-1 text-right">
-                      <button type="button" onClick={saveEditor} className={`btn btn-sm h-7 min-h-0 px-2 ${accentBtn}`} aria-label={t('entry.saveEdit')}>
-                        ✓
+                    <td className="py-1 pr-1.5 text-right">
+                      <button
+                        type="button"
+                        onClick={saveEditor}
+                        className={`btn btn-sm h-7 min-h-0 px-2 ${accentBtn}`}
+                        aria-label={t('entry.saveEdit')}
+                      >
+                        <Icon8 name="checkmark" size={14} />
                       </button>
                     </td>
                   </>
                 ) : (
                   <>
-                    <td className="px-2 py-1 font-bold">{formatDisplayCode(r.displayCode)}</td>
-                    <td className="px-2 py-1 text-right font-medium tabular-nums">{fmt(r.rowTotal)}</td>
-                    <td className="py-1 pr-1 text-right">
+                    <td className="px-2 py-1 font-mono font-bold text-slate-900">
+                      {formatDisplayCode(r.displayCode)}
+                    </td>
+                    <td className="px-2.5 py-1 text-right font-mono font-semibold tabular-nums text-slate-800">
+                      {fmt(r.rowTotal)}
+                    </td>
+                    <td className="py-1 pr-1.5 text-right">
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           p.onDeleteRow(r.id);
                         }}
-                        className="btn btn-danger btn-sm h-6 min-h-0 px-1.5 text-[11px]"
+                        className="inline-flex h-6 w-6 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600"
                         aria-label={t('entry.deleteRow')}
                       >
-                        ✕
+                        <Icon8 name="close" size={14} />
                       </button>
                     </td>
                   </>
@@ -487,7 +475,7 @@ export default function EntryPanel(p: Props) {
             ))}
             {shownRows.length === 0 && (
               <tr>
-                <td colSpan={4} className="py-6 text-center text-xs text-slate-400">
+                <td colSpan={4} className="py-8 text-center text-xs text-slate-400">
                   {t('entry.empty')}
                 </td>
               </tr>
@@ -496,17 +484,30 @@ export default function EntryPanel(p: Props) {
         </table>
       </div>
 
-      <div className="mt-auto flex items-center justify-between border-t border-slate-200 bg-slate-50/70 px-2.5 py-1">
-        <span className="text-xs font-medium text-slate-600">{t('entry.total')}</span>
-        <span className="text-base font-extrabold tabular-nums text-slate-900">{fmt(total)}</span>
-      </div>
-      <div className="flex gap-1.5 bg-slate-50/70 px-2 pb-1.5">
-        <button type="button" onClick={p.onSave} className={`btn btn-sm h-8 min-h-0 flex-1 text-xs font-bold ${accentBtn}`}>
-          {p.side === 'bet' ? t('entry.saveBet') : t('entry.saveCarry')}
-        </button>
-        <button type="button" onClick={p.onClear} className="btn btn-ghost btn-sm h-8 min-h-0 px-3 text-xs">
-          {t('entry.clear')}
-        </button>
+      {/* Footer Total & Save Bar */}
+      <div className="mt-auto border-t border-slate-200/90 bg-slate-50/80 p-2.5">
+        <div className="mb-2 flex items-baseline justify-between px-0.5">
+          <span className="text-xs font-semibold text-slate-600">{t('entry.total')}</span>
+          <span className="font-mono text-base font-extrabold tabular-nums text-slate-900">
+            {fmt(total)}
+          </span>
+        </div>
+        <div className="flex gap-1.5">
+          <button
+            type="button"
+            onClick={p.onSave}
+            className={`btn btn-sm h-9 min-h-0 flex-1 text-xs font-bold ${accentBtn}`}
+          >
+            {p.side === 'bet' ? t('entry.saveBet') : t('entry.saveCarry')}
+          </button>
+          <button
+            type="button"
+            onClick={p.onClear}
+            className="btn btn-outline btn-sm h-9 min-h-0 px-3 text-xs font-semibold"
+          >
+            {t('entry.clear')}
+          </button>
+        </div>
       </div>
 
       {askNewPersonNo && (

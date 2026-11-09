@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { DeleteScope } from '../lib/db';
 import { deleteScope } from '../lib/db';
 import { useLang } from '../i18n';
+import { Icon8 } from './Icons8';
 
 /**
  * Topmost-Esc stack: every modal/popup registers its onClose here, and a
@@ -46,18 +47,31 @@ export function Modal(p: { title: string; onClose: () => void; wide?: boolean; c
   const { t } = useLang();
   useTopmostEsc(p.onClose);
   return (
-    <div className="fixed inset-0 z-40 flex items-start justify-center bg-black/40 p-3 pt-16" onClick={p.onClose}>
+    <div
+      className="fixed inset-0 z-40 flex items-start justify-center bg-slate-900/55 p-3 pt-10 backdrop-blur-xs"
+      onClick={p.onClose}
+    >
       <div
-        className={`max-h-[85vh] w-full overflow-y-auto rounded-lg border bg-white p-4 shadow-xl ${p.wide ? 'max-w-5xl' : 'max-w-lg'}`}
+        className={`flex max-h-[88vh] w-full flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl ${
+          p.wide ? 'max-w-6xl' : 'max-w-lg'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-800">{p.title}</h2>
-          <button type="button" onClick={p.onClose} className="btn btn-ghost btn-sm" aria-label={t('dialog.close')}>
-            ✕
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-200/80 bg-gradient-to-r from-slate-50 to-white px-5 py-3">
+          <div className="flex items-center gap-2.5">
+            <span className="h-2 w-2 rounded-full bg-indigo-600" />
+            <h2 className="text-sm font-extrabold tracking-tight text-slate-900">{p.title}</h2>
+          </div>
+          <button
+            type="button"
+            onClick={p.onClose}
+            className="btn btn-ghost btn-sm h-7 w-7 min-h-0 rounded-lg p-0 text-xs text-slate-500 hover:bg-slate-200/70 hover:text-slate-900"
+            aria-label={t('dialog.close')}
+          >
+            <Icon8 name="close" size={16} />
           </button>
         </div>
-        <div className="mt-3">{p.children}</div>
+        <div className="overflow-y-auto p-4">{p.children}</div>
       </div>
     </div>
   );
@@ -93,18 +107,27 @@ export function ConfirmDialog(p: {
   }, []);
   return (
     <Modal title={p.title ?? t('dialog.confirmDefaultTitle')} onClose={p.onCancel}>
-      <p className="text-sm text-slate-700">{p.message}</p>
-      <div className="mt-4 flex gap-2">
+      <div className="flex items-start gap-3">
+        <div
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-extrabold ${
+            p.danger ? 'bg-red-100 text-red-700' : 'bg-indigo-100 text-indigo-700'
+          }`}
+        >
+          <Icon8 name={p.danger ? 'warning' : 'help'} size={22} />
+        </div>
+        <p className="pt-1 text-sm leading-relaxed font-medium text-slate-700">{p.message}</p>
+      </div>
+      <div className="mt-5 flex justify-end gap-2 border-t border-slate-100 pt-3">
+        <button type="button" onClick={p.onCancel} className="btn btn-ghost h-8 min-h-0 px-3 text-xs">
+          {p.cancelLabel ?? t('dialog.confirmCancel')}
+        </button>
         <button
           ref={okRef}
           type="button"
           onClick={p.onConfirm}
-          className={`btn ${p.danger ? 'btn-danger' : 'btn-primary'}`}
+          className={`btn h-8 min-h-0 px-4 text-xs ${p.danger ? 'btn-danger' : 'btn-primary'}`}
         >
           {p.confirmLabel ?? t('dialog.confirmOk')}
-        </button>
-        <button type="button" onClick={p.onCancel} className="btn btn-ghost">
-          {p.cancelLabel ?? t('dialog.confirmCancel')}
         </button>
       </div>
     </Modal>
@@ -122,34 +145,51 @@ export function ChangeDateDialog(p: {
   const [sess, setSess] = useState<'AM' | 'PM'>(p.session);
   return (
     <Modal title={t('dialog.changeDate')} onClose={p.onClose}>
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="text-sm font-medium text-slate-600">
-          {t('dialog.changeDate.date')}
-          <input type="date" className="input ml-2" value={day} onChange={(e) => setDay(e.target.value)} />
-        </label>
-        <div className="flex overflow-hidden rounded-lg border">
-          {(['AM', 'PM'] as const).map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setSess(s)}
-              className={`px-4 py-2 font-bold ${sess === s ? 'bg-indigo-600 text-white' : 'bg-white text-slate-700'}`}
-            >
-              {s}
-            </button>
-          ))}
+      <p className="text-xs font-medium text-slate-500">{t('dialog.changeDate.note')}</p>
+      <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3.5">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto]">
+          <label className="flex flex-col gap-1 text-xs font-bold text-slate-700">
+            <span>{t('dialog.changeDate.date')}</span>
+            <input
+              type="date"
+              className="input h-9 w-full font-mono text-sm font-bold text-slate-900"
+              value={day}
+              onChange={(e) => setDay(e.target.value)}
+            />
+          </label>
+          <div className="flex flex-col gap-1 text-xs font-bold text-slate-700">
+            <span>Session</span>
+            <div className="flex h-9 overflow-hidden rounded-md border border-slate-300 bg-white p-0.5">
+              {(['AM', 'PM'] as const).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setSess(s)}
+                  className={`px-4 text-xs font-extrabold transition-colors rounded-xs ${
+                    sess === s ? 'bg-indigo-600 text-white shadow-2xs' : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
+      </div>
+      <div className="mt-4 flex justify-end gap-2 border-t border-slate-100 pt-3">
+        <button type="button" onClick={p.onClose} className="btn btn-ghost h-8 min-h-0 px-3 text-xs">
+          {t('dialog.close')}
+        </button>
         <button
           type="button"
           onClick={() => {
             if (day) p.onApply(day, sess);
           }}
-          className="btn btn-primary"
+          className="btn btn-primary h-8 min-h-0 px-4 text-xs"
         >
           {t('dialog.changeDate.apply')}
         </button>
       </div>
-      <p className="mt-2 text-sm text-slate-500">{t('dialog.changeDate.note')}</p>
     </Modal>
   );
 }
@@ -173,43 +213,73 @@ export function DeleteDialog(p: { betDay: string; onDone: (msg: string) => void;
   const [confirming, setConfirming] = useState(false);
   return (
     <Modal title={t('dialog.delete')} onClose={p.onClose}>
-      <p className="text-sm text-red-700">{t('dialog.delete.warn')}</p>
-      <div className="mt-3 flex flex-wrap items-end gap-3">
-        <label className="text-sm font-medium text-slate-600">
-          {t('dialog.delete.date')}
-          <input type="date" className="input ml-2" value={day} onChange={(e) => setDay(e.target.value)} />
+      <div className="flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50/80 p-3 text-xs font-semibold text-red-800">
+        <Icon8 name="warning" size={18} className="mt-0.5 shrink-0" />
+        <span className="leading-relaxed">{t('dialog.delete.warn')}</span>
+      </div>
+
+      <div className="mt-3 grid grid-cols-1 gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3 sm:grid-cols-[1fr_auto]">
+        <label className="flex flex-col gap-1 text-xs font-bold text-slate-700">
+          <span>{t('dialog.delete.date')}</span>
+          <input
+            type="date"
+            className="input h-9 w-full font-mono text-sm font-bold text-slate-900"
+            value={day}
+            onChange={(e) => setDay(e.target.value)}
+          />
         </label>
-        <div className="flex overflow-hidden rounded-lg border">
-          {(['upto', 'from'] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => setMode(m)}
-              className={`px-4 py-2 font-bold ${mode === m ? 'bg-indigo-600 text-white' : 'bg-white text-slate-700'}`}
-            >
-              {t(m === 'upto' ? 'dialog.delete.upTo' : 'dialog.delete.from')}
-            </button>
-          ))}
+        <div className="flex flex-col gap-1 text-xs font-bold text-slate-700">
+          <span>Direction</span>
+          <div className="flex h-9 overflow-hidden rounded-md border border-slate-300 bg-white p-0.5">
+            {(['upto', 'from'] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMode(m)}
+                className={`px-3 text-xs font-extrabold transition-colors rounded-xs ${
+                  mode === m ? 'bg-slate-800 text-white shadow-2xs' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                {t(m === 'upto' ? 'dialog.delete.upTo' : 'dialog.delete.from')}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-1">
-        {DELETE_SCOPES.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => setScope(s.id)}
-            className={`rounded-lg border px-3 py-2 text-left text-sm font-bold ${scope === s.id ? 'border-red-500 bg-red-50 text-red-700' : 'bg-white text-slate-700'}`}
-          >
-            {t(s.key)}
-          </button>
-        ))}
+
+      <div className="mt-3 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+        {DELETE_SCOPES.map((s) => {
+          const active = scope === s.id;
+          return (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => setScope(s.id)}
+              className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs font-bold transition-all ${
+                active
+                  ? 'border-red-500 bg-red-50 text-red-800 ring-1 ring-red-500/30'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+              } ${s.id === 'all' ? 'sm:col-span-2' : ''}`}
+            >
+              <span
+                className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
+                  active ? 'border-red-600 bg-red-600 text-white' : 'border-slate-300 bg-white'
+                }`}
+              >
+                {active && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+              </span>
+              <span className="leading-snug">{t(s.key)}</span>
+            </button>
+          );
+        })}
       </div>
-      <div className="mt-3 flex gap-2">
-        <button type="button" disabled={busy} onClick={() => setConfirming(true)} className="btn btn-danger">
-          {t('dialog.delete.deleteBtn')}
-        </button>
-        <button type="button" onClick={p.onClose} className="btn btn-ghost">
+
+      <div className="mt-4 flex justify-end gap-2 border-t border-slate-100 pt-3">
+        <button type="button" onClick={p.onClose} className="btn btn-ghost h-8 min-h-0 px-3 text-xs">
           {t('dialog.delete.closeBtn')}
+        </button>
+        <button type="button" disabled={busy} onClick={() => setConfirming(true)} className="btn btn-danger h-8 min-h-0 px-4 text-xs">
+          {t('dialog.delete.deleteBtn')}
         </button>
       </div>
       {confirming && (
@@ -225,7 +295,6 @@ export function DeleteDialog(p: { betDay: string; onDone: (msg: string) => void;
             const n = await deleteScope(day, mode, scope);
             setBusy(false);
             p.onDone(t('dialog.delete.done', { n }));
-            // Single confirm: the dialog closes after deleting.
             p.onClose();
           }}
         />
@@ -235,11 +304,7 @@ export function DeleteDialog(p: { betDay: string; onDone: (msg: string) => void;
 }
 
 /**
- * Limit / Calc popup (D12 + D13). The original kept the limit box hidden
- * and only wrote it into Calc after an "Are You Sure to Save?" confirm
- * (txtLimit_KeyDown, MDIMain.cs:8510); the global commission % and rate
- * (txtPercent / txtRate, same update) were editable there too. Nothing
- * persists on keystroke — Apply asks once, then saves all three values.
+ * Limit / Calc popup (D12 + D13).
  */
 export function CalcDialog(p: {
   limit: number;
@@ -256,45 +321,45 @@ export function CalcDialog(p: {
   const valid = limit.trim() !== '' && commission.trim() !== '' && rate.trim() !== '';
   return (
     <Modal title={t('dialog.calc')} onClose={p.onClose}>
-      <p className="text-sm text-slate-500">{t('dialog.calc.note')}</p>
-      <div className="mt-3 flex flex-wrap gap-4">
-        <label className="text-sm font-medium text-slate-600">
-          {t('dialog.calc.limit')}
+      <p className="text-xs font-medium text-slate-500">{t('dialog.calc.note')}</p>
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <label className="flex flex-col gap-1 rounded-lg border border-amber-200 bg-amber-50/50 p-3 text-xs font-bold text-slate-700">
+          <span>{t('dialog.calc.limit')}</span>
           <input
             type="number"
-            className="input-yellow ml-2 w-28"
+            className="input-yellow h-9 w-full font-mono text-base font-extrabold tabular-nums"
             value={limit}
             onChange={(e) => setLimit(e.target.value)}
             aria-label={t('dialog.calc.limit')}
           />
         </label>
-        <label className="text-sm font-medium text-slate-600">
-          {t('dialog.calc.commission')}
+        <label className="flex flex-col gap-1 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-700">
+          <span>{t('dialog.calc.commission')}</span>
           <input
             type="number"
-            className="input ml-2 w-24 py-2 text-base font-bold"
+            className="input h-9 w-full font-mono text-base font-extrabold tabular-nums text-slate-900"
             value={commission}
             onChange={(e) => setCommission(e.target.value)}
             aria-label={t('dialog.calc.commission')}
           />
         </label>
-        <label className="text-sm font-medium text-slate-600">
-          {t('dialog.calc.rate')}
+        <label className="flex flex-col gap-1 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-700">
+          <span>{t('dialog.calc.rate')}</span>
           <input
             type="number"
-            className="input ml-2 w-24 py-2 text-base font-bold"
+            className="input h-9 w-full font-mono text-base font-extrabold tabular-nums text-slate-900"
             value={rate}
             onChange={(e) => setRate(e.target.value)}
             aria-label={t('dialog.calc.rate')}
           />
         </label>
       </div>
-      <div className="mt-4 flex gap-2">
-        <button type="button" disabled={!valid} onClick={() => setConfirming(true)} className="btn btn-primary">
-          {t('dialog.calc.save')}
-        </button>
-        <button type="button" onClick={p.onClose} className="btn btn-ghost">
+      <div className="mt-4 flex justify-end gap-2 border-t border-slate-100 pt-3">
+        <button type="button" onClick={p.onClose} className="btn btn-ghost h-8 min-h-0 px-3 text-xs">
           {t('dialog.calc.cancel')}
+        </button>
+        <button type="button" disabled={!valid} onClick={() => setConfirming(true)} className="btn btn-primary h-8 min-h-0 px-4 text-xs">
+          {t('dialog.calc.save')}
         </button>
       </div>
       {confirming && (
@@ -332,30 +397,47 @@ export function CloseDaysDialog(p: { onClose: () => void }) {
   };
   return (
     <Modal title={t('dialog.closeDays')} onClose={p.onClose}>
-      <p className="text-sm text-slate-500">{t('dialog.closeDays.note')}</p>
-      <div className="mt-3 flex gap-2">
-        <input type="date" className="input" value={day} onChange={(e) => setDay(e.target.value)} />
+      <p className="text-xs font-medium text-slate-500">{t('dialog.closeDays.note')}</p>
+      <div className="mt-3 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+        <input
+          type="date"
+          className="input h-8 flex-1 font-mono text-xs font-bold text-slate-900"
+          value={day}
+          onChange={(e) => setDay(e.target.value)}
+        />
         <button
           type="button"
           onClick={() => {
-            if (day && !days.includes(day)) save([...days, day].sort());
+            if (day && !days.includes(day)) {
+              save([...days, day].sort());
+              setDay('');
+            }
           }}
-          className="btn btn-primary"
+          className="btn btn-primary btn-sm h-8 min-h-0 px-3 text-xs"
         >
           {t('dialog.closeDays.save')}
         </button>
       </div>
-      <ul className="mt-3 space-y-1">
-        {days.length === 0 && <li className="text-sm text-slate-400">{t('dialog.closeDays.empty')}</li>}
-        {days.map((d) => (
-          <li key={d} className="flex items-center justify-between rounded border px-3 py-1 text-sm">
-            <span>{d}</span>
-            <button type="button" onClick={() => save(days.filter((x) => x !== d))} className="btn btn-danger btn-sm">
-              {t('dialog.closeDays.delete')}
-            </button>
-          </li>
-        ))}
-      </ul>
+      <div className="mt-3 max-h-60 overflow-y-auto rounded-lg border border-slate-200">
+        {days.length === 0 ? (
+          <p className="py-6 text-center text-xs text-slate-400">{t('dialog.closeDays.empty')}</p>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {days.map((d) => (
+              <li key={d} className="flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-50">
+                <span className="font-mono font-bold text-slate-800">{d}</span>
+                <button
+                  type="button"
+                  onClick={() => save(days.filter((x) => x !== d))}
+                  className="btn btn-danger btn-sm h-6 min-h-0 px-2 text-[11px]"
+                >
+                  {t('dialog.closeDays.delete')}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </Modal>
   );
 }
@@ -364,8 +446,10 @@ export function AboutDialog(p: { onClose: () => void }) {
   const { t } = useLang();
   return (
     <Modal title={t('dialog.about')} onClose={p.onClose}>
-      <pre className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{t('dialog.about.cheat')}</pre>
-      <p className="mt-2 text-sm text-slate-500">{t('dialog.about.note')}</p>
+      <pre className="rounded-lg border border-slate-200 bg-slate-50 p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap text-slate-700">
+        {t('dialog.about.cheat')}
+      </pre>
+      <p className="mt-2 text-xs text-slate-500">{t('dialog.about.note')}</p>
     </Modal>
   );
 }
@@ -375,10 +459,16 @@ export function HighlightDialog(p: { color: string; onApply: (c: string) => void
   const [c, setC] = useState(p.color);
   return (
     <Modal title={t('dialog.highlight')} onClose={p.onClose}>
-      <p className="text-sm text-slate-500">{t('dialog.highlight.note')}</p>
-      <div className="mt-3 flex items-center gap-3">
-        <input type="color" value={c} onChange={(e) => setC(e.target.value)} className="h-12 w-16 cursor-pointer rounded border" aria-label={t('dialog.highlight.colorLabel')} />
-        <span className="rounded px-3 py-2 font-mono text-sm" style={{ backgroundColor: c }}>
+      <p className="text-xs text-slate-500">{t('dialog.highlight.note')}</p>
+      <div className="mt-3 flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <input
+          type="color"
+          value={c}
+          onChange={(e) => setC(e.target.value)}
+          className="h-10 w-14 cursor-pointer rounded border border-slate-300 bg-white p-0.5"
+          aria-label={t('dialog.highlight.colorLabel')}
+        />
+        <span className="rounded border border-slate-300 px-3 py-1.5 font-mono text-xs font-bold shadow-2xs" style={{ backgroundColor: c }}>
           {c}
         </span>
         <button
@@ -387,7 +477,7 @@ export function HighlightDialog(p: { color: string; onApply: (c: string) => void
             p.onApply(c);
             p.onClose();
           }}
-          className="btn btn-primary"
+          className="btn btn-primary ml-auto h-8 min-h-0 px-4 text-xs"
         >
           {t('dialog.highlight.apply')}
         </button>
@@ -395,3 +485,148 @@ export function HighlightDialog(p: { color: string; onApply: (c: string) => void
     </Modal>
   );
 }
+
+export function DeviceStatusDialog(p: {
+  profile: {
+    deviceId: string;
+    fingerprintHash: string;
+    platformSummary: string;
+    isStandalone: boolean;
+    firstSeenAt: number;
+    lastSeenAt: number;
+    bootCount: number;
+    lastBootMode: 'FRESH_START' | 'RETURNING_USER';
+    bootReason: string;
+  } | null;
+  counts: { codes: number; details: number; lucky: number; people: number };
+  onCopyDeviceId: (id: string) => void;
+  onResetFreshStart: () => Promise<void>;
+  onClose: () => void;
+}) {
+  const { t } = useLang();
+  const [confirmReset, setConfirmReset] = useState(false);
+  const isFresh = p.profile?.lastBootMode === 'FRESH_START';
+  const fmtTime = (ms?: number) => (ms ? new Date(ms).toLocaleString() : '—');
+
+  return (
+    <Modal title={t('device.title')} onClose={p.onClose}>
+      <p className="text-xs leading-relaxed text-slate-600">{t('device.subtitle')}</p>
+
+      {/* Auto-Detect Banner */}
+      <div
+        className={`mt-3 flex items-center justify-between rounded-xl border px-3.5 py-2.5 ${
+          isFresh
+            ? 'border-emerald-200 bg-emerald-50/80 text-emerald-900'
+            : 'border-indigo-200 bg-indigo-50/80 text-indigo-900'
+        }`}
+      >
+        <div className="flex items-center gap-2.5">
+          <span
+            className={`h-2.5 w-2.5 rounded-full ${
+              isFresh ? 'bg-emerald-500 ring-4 ring-emerald-500/20' : 'bg-indigo-600 ring-4 ring-indigo-600/20'
+            }`}
+          />
+          <div>
+            <div className="text-xs font-extrabold">
+              {isFresh ? t('device.badgeFresh') : t('device.badgeReturning')}
+            </div>
+            <div className="font-mono text-[11px] opacity-80">
+              {p.profile?.platformSummary ?? 'Browser'} · {t('device.bootCount')}: {p.profile?.bootCount ?? 1}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Device Identity & Auth Binding Details */}
+      <div className="mt-3 space-y-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-xs">
+        <div className="flex items-center justify-between gap-2 border-b border-slate-200/80 pb-2">
+          <div>
+            <div className="text-[11px] font-semibold text-slate-500">{t('device.deviceId')}</div>
+            <div className="mt-0.5 font-mono text-sm font-extrabold tracking-tight text-slate-900">
+              {p.profile?.deviceId ?? '—'}
+            </div>
+          </div>
+          {p.profile?.deviceId && (
+            <button
+              type="button"
+              onClick={() => p.onCopyDeviceId(p.profile!.deviceId)}
+              className="btn btn-outline btn-sm h-7 min-h-0 gap-1.5 px-2.5 text-xs font-bold"
+            >
+              <Icon8 name="clipboard" size={14} />
+              <span>{t('device.copyId')}</span>
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 pt-1">
+          <div>
+            <div className="text-[11px] font-semibold text-slate-500">{t('device.fingerprint')}</div>
+            <div className="font-mono text-xs font-bold text-slate-800">{p.profile?.fingerprintHash ?? '—'}</div>
+          </div>
+          <div>
+            <div className="text-[11px] font-semibold text-slate-500">{t('device.platform')}</div>
+            <div className="font-semibold text-slate-800">{p.profile?.platformSummary ?? '—'}</div>
+          </div>
+          <div>
+            <div className="text-[11px] font-semibold text-slate-500">{t('device.firstSeen')}</div>
+            <div className="font-mono text-[11px] font-semibold text-slate-700">{fmtTime(p.profile?.firstSeenAt)}</div>
+          </div>
+          <div>
+            <div className="text-[11px] font-semibold text-slate-500">{t('device.lastSeen')}</div>
+            <div className="font-mono text-[11px] font-semibold text-slate-700">{fmtTime(p.profile?.lastSeenAt)}</div>
+          </div>
+        </div>
+
+        <div className="border-t border-slate-200/80 pt-2">
+          <div className="text-[11px] font-semibold text-slate-500">{t('device.recordsSummary')}</div>
+          <div className="mt-0.5 font-mono text-xs font-bold text-slate-800">
+            {t('backup.currentData', {
+              details: p.counts.details,
+              codes: p.counts.codes,
+              lucky: p.counts.lucky,
+              people: p.counts.people,
+            })}
+          </div>
+        </div>
+
+        <div className="border-t border-slate-200/80 pt-2">
+          <div className="text-[11px] font-semibold text-slate-500">{t('device.licenseStatus')}</div>
+          <div className="mt-0.5 flex items-center gap-1.5 font-semibold text-indigo-700">
+            <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
+            <span>{t('device.licenseReady')}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer Actions */}
+      <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+        <button
+          type="button"
+          onClick={() => setConfirmReset(true)}
+          className="btn btn-danger h-8 min-h-0 px-3 text-xs"
+        >
+          {t('device.freshResetBtn')}
+        </button>
+        <button type="button" onClick={p.onClose} className="btn btn-ghost h-8 min-h-0 px-3 text-xs">
+          {t('dialog.close')}
+        </button>
+      </div>
+
+      {confirmReset && (
+        <ConfirmDialog
+          title={t('device.freshResetConfirmTitle')}
+          message={t('device.freshResetConfirmMsg')}
+          confirmLabel={t('device.freshResetYes')}
+          danger
+          onCancel={() => setConfirmReset(false)}
+          onConfirm={async () => {
+            setConfirmReset(false);
+            await p.onResetFreshStart();
+            p.onClose();
+          }}
+        />
+      )}
+    </Modal>
+  );
+}
+
