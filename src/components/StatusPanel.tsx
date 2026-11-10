@@ -33,7 +33,7 @@ export default function StatusPanel(p: {
           <button
             type="button"
             onClick={p.onOpenCalc}
-            className="btn btn-outline h-5 min-h-0 rounded px-1.5 text-[10px] font-bold whitespace-nowrap text-indigo-700 border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100"
+            className="btn btn-outline h-5 min-h-0 shrink-0 rounded px-1 text-[10px] font-bold whitespace-nowrap text-indigo-700 border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100"
             title={t('status.limitTitle')}
           >
             {t('status.limitEdit')}
@@ -60,13 +60,13 @@ export default function StatusPanel(p: {
   const cyanBot = new Set(['D', 'H']);
 
   return (
-    <div className="flex flex-1 flex-col gap-1.5">
-      <section className="card flex flex-1 flex-col overflow-hidden">
-        <div className="h-1 w-full bg-gradient-to-r from-slate-800 via-indigo-600 to-teal-500" />
+    <div className="flex h-full min-h-0 flex-1 flex-col gap-1.5">
+      <section className="card flex min-h-0 flex-1 flex-col overflow-hidden border-slate-300">
+        <div className="h-1 w-full shrink-0 bg-gradient-to-r from-slate-800 via-indigo-600 to-teal-500" />
         <table className="h-full w-full table-fixed text-xs">
           <colgroup>
-            <col className="w-[52%]" />
-            <col className="w-[48%]" />
+            <col className="w-[56%]" />
+            <col className="w-[44%]" />
           </colgroup>
           <tbody>
             {rows.map((r) => {
@@ -80,12 +80,12 @@ export default function StatusPanel(p: {
                   ? 'bg-slate-50/70'
                   : '';
               return (
-                <tr key={r.label} className="border-b border-slate-100 last:border-b-0 transition-colors hover:bg-slate-50/50">
+                <tr key={r.label} className="border-b border-slate-200/80 last:border-b-0 transition-colors hover:bg-slate-50/50">
                   <td
                     className={
                       r.highlight
-                        ? `px-2.5 py-2 text-xs font-extrabold leading-snug ${tint}`
-                        : `px-2.5 py-1.5 text-[11px] font-semibold leading-snug text-slate-600 ${r.isLimit ? 'bg-slate-50/70 font-bold text-slate-700' : 'bg-slate-50/40'}`
+                        ? `px-2 py-0.5 2xl:py-1.5 text-[11.5px] 2xl:text-xs font-extrabold leading-tight whitespace-nowrap truncate ${tint}`
+                        : `px-2 py-0.5 2xl:py-1 text-[11.5px] 2xl:text-xs font-bold leading-tight whitespace-nowrap truncate text-slate-700 ${r.isLimit ? 'bg-slate-50/70 font-extrabold text-slate-800' : 'bg-slate-50/40'}`
                     }
                   >
                     {r.label}
@@ -93,8 +93,8 @@ export default function StatusPanel(p: {
                   <td
                     className={
                       r.highlight
-                        ? `px-2.5 py-2 text-right font-mono text-sm font-extrabold tabular-nums ${tint}`
-                        : `px-2.5 py-1.5 text-right font-mono text-xs font-bold tabular-nums text-slate-900 ${r.isLimit ? 'bg-slate-50/70' : ''} ${r.red ? 'text-rose-600' : ''}`
+                        ? `px-2 py-0.5 2xl:py-1.5 text-right font-mono text-[13px] 2xl:text-sm font-black tabular-nums whitespace-nowrap ${tint}`
+                        : `px-2 py-0.5 2xl:py-1 text-right font-mono text-xs 2xl:text-[13px] font-extrabold tabular-nums whitespace-nowrap text-slate-900 ${r.isLimit ? 'bg-slate-50/70' : ''} ${r.red ? 'text-rose-600' : ''}`
                     }
                   >
                     {r.node ?? r.value}
@@ -106,10 +106,10 @@ export default function StatusPanel(p: {
         </table>
       </section>
 
-      <section className="card mt-auto p-2 bg-gradient-to-b from-white to-slate-50/60">
-        <div className="flex justify-between px-1 font-mono text-[10px] font-bold text-slate-600">
+      <section className="card mt-auto shrink-0 border-slate-300 bg-gradient-to-b from-white to-slate-50/60 p-1.5">
+        <div className="flex justify-between px-1 font-mono text-[10px] font-extrabold text-slate-700">
           {top.map((l, i) => (
-            <span key={l} className={p.autoLetter === l ? 'text-rose-600 font-extrabold' : ''}>
+            <span key={l} className={p.autoLetter === l ? 'text-rose-600 font-black' : ''}>
               {l}={topVal[i]}
             </span>
           ))}
@@ -118,27 +118,27 @@ export default function StatusPanel(p: {
           {top.map((l) => (
             <div
               key={l}
-              className={`h-3.5 rounded-sm border transition-all ${
+              className={`h-3 rounded-xs border transition-all ${
                 cyanTop.has(l)
-                  ? 'border-teal-300 bg-teal-100/90'
-                  : 'border-slate-200 bg-white'
+                  ? 'border-teal-400 bg-teal-100/90'
+                  : 'border-slate-300 bg-white'
               } ${p.autoLetter === l ? 'ring-2 ring-rose-500 ring-offset-1' : ''}`}
             />
           ))}
           {bot.map((l) => (
             <div
               key={l}
-              className={`h-3.5 rounded-sm border transition-all ${
+              className={`h-3 rounded-xs border transition-all ${
                 cyanBot.has(l)
-                  ? 'border-teal-300 bg-teal-100/90'
-                  : 'border-slate-200 bg-white'
+                  ? 'border-teal-400 bg-teal-100/90'
+                  : 'border-slate-300 bg-white'
               } ${p.autoLetter === l ? 'ring-2 ring-rose-500 ring-offset-1' : ''}`}
             />
           ))}
         </div>
-        <div className="flex justify-between px-1 font-mono text-[10px] font-bold text-slate-600">
+        <div className="flex justify-between px-1 font-mono text-[10px] font-extrabold text-slate-700">
           {bot.map((l, i) => (
-            <span key={l} className={p.autoLetter === l ? 'text-rose-600 font-extrabold' : ''}>
+            <span key={l} className={p.autoLetter === l ? 'text-rose-600 font-black' : ''}>
               {l}={botVal[i]}
             </span>
           ))}

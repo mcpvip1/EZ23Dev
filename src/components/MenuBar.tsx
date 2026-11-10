@@ -83,12 +83,12 @@ export default function MenuBar(p: {
   ];
 
   const SYSTEM: Item[] = [
+    { key: 'menu.auto', action: 'auto', icon: 'lightning' },
+    { key: 'menu.template', action: 'template', icon: 'clipboard' },
     { key: 'menu.system.device', action: 'deviceStatus', icon: 'device' },
     { key: 'menu.system.backup', action: 'backup', icon: 'database' },
     { key: 'menu.system.highlight', action: 'highlight', icon: 'palette' },
     { key: 'menu.system.about', action: 'about', icon: 'help' },
-    { key: 'menu.lang.my', action: 'langMy', icon: 'globe', checked: lang === 'my' },
-    { key: 'menu.lang.en', action: 'langEn', icon: 'globe', checked: lang === 'en' },
     { key: 'menu.system.exit', action: 'close', icon: 'close' },
   ];
 
@@ -134,7 +134,7 @@ export default function MenuBar(p: {
           />
         </button>
         {isOpen && (
-          <div className="absolute left-0 top-full z-40 mt-1.5 min-w-60 rounded-xl border border-slate-200/90 bg-white p-1.5 shadow-2xl ring-1 ring-slate-900/5">
+          <div className="absolute right-0 top-full z-40 mt-1.5 min-w-60 rounded-xl border border-slate-200/90 bg-white p-1.5 shadow-2xl ring-1 ring-slate-900/5">
             {items.map((it) => (
               <button
                 key={it.key}
@@ -169,26 +169,11 @@ export default function MenuBar(p: {
     );
   };
 
-  const single = (labelKey: string, action: MenuAction['kind'], accent?: boolean) => (
-    <button
-      key={labelKey}
-      type="button"
-      onClick={() => run(action)}
-      className={`inline-flex h-8 items-center justify-center rounded-lg px-2.5 text-xs font-bold whitespace-nowrap transition-colors ${
-        accent
-          ? 'border border-indigo-400/30 bg-indigo-500/15 text-indigo-200 hover:bg-indigo-500/25 hover:text-white'
-          : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-      }`}
-    >
-      {t(labelKey)}
-    </button>
-  );
-
   const isFresh = p.deviceProfile?.lastBootMode === 'FRESH_START';
 
   return (
-    <header ref={ref} className="no-print sticky top-0 z-30 border-b border-slate-800 bg-slate-900 text-slate-100 shadow-sm">
-      <div className="mx-auto flex max-w-[1260px] flex-wrap items-center gap-1.5 px-3 py-1.5">
+    <header ref={ref} className="no-print sticky top-0 z-30 shrink-0 border-b border-slate-800 bg-slate-900 text-slate-100 shadow-sm">
+      <div className="flex w-full max-w-7xl mx-auto flex-wrap items-center gap-1.5 px-2.5 py-1">
         {/* Brand Identity */}
         <div className="mr-1.5 flex items-center gap-2 select-none">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-700 font-mono text-xs font-black text-white shadow-xs">
@@ -199,31 +184,20 @@ export default function MenuBar(p: {
           </span>
         </div>
 
-        {/* Primary Dropdown Menus & Quick Actions (Right-Aligned) */}
-        <nav className="ml-auto flex items-center gap-1" aria-label="Main Menu">
-          {menu('setup', 'menu.setup', SETUP, 'settings')}
-          {menu('report', 'menu.report', REPORT, 'report')}
-          {menu('system', 'menu.system', SYSTEM, 'device')}
-        </nav>
-
         <div className="mx-1 h-4 w-px bg-slate-700/80" />
 
-        {/* Smart Ingestion & Quick Actions */}
-        <div className="flex flex-wrap items-center gap-1">
-          {single('menu.auto', 'auto', true)}
-          {single('menu.template', 'template')}
-        </div>
-
-        <div className="mx-1 h-4 w-px bg-slate-700/80" />
-
-        {/* Right Zone: Auto-Detect Status Button + Active Date & Session Switcher */}
+        {/* Left Zone: Active Date, Session Switcher & Device Status */}
         <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-slate-300 whitespace-nowrap">
+            {lang === 'my' ? 'လက်ရှိရက်စွဲ:' : 'Current Date:'}
+          </span>
+          {p.right}
           {p.deviceProfile && (
             <button
               type="button"
               onClick={() => run('deviceStatus')}
               title={`${t('device.title')} — ${p.deviceProfile.deviceId}`}
-              className={`inline-flex h-7 items-center gap-1.5 rounded-lg border px-2 font-mono text-[11px] font-bold transition-colors whitespace-nowrap ${
+              className={`inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 font-mono text-[11px] font-bold transition-colors whitespace-nowrap ${
                 isFresh
                   ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25'
                   : 'border-slate-700 bg-slate-800/90 text-slate-300 hover:border-slate-600 hover:text-white'
@@ -233,11 +207,49 @@ export default function MenuBar(p: {
               <span>{isFresh ? 'Fresh Start' : p.deviceProfile.deviceId.slice(0, 8)}</span>
             </button>
           )}
-          <span className="hidden text-xs font-semibold text-slate-300 xl:inline-block whitespace-nowrap">
-            {lang === 'my' ? 'လက်ရှိရက်စွဲ:' : 'Current Date:'}
-          </span>
-          {p.right}
         </div>
+
+        {/* Primary Dropdown Menus & Language Selector (Right-Aligned) */}
+        <nav className="ml-auto flex items-center gap-1.5" aria-label="Main Menu">
+          {menu('setup', 'menu.setup', SETUP, 'settings')}
+          {menu('report', 'menu.report', REPORT, 'report')}
+          {menu('system', 'menu.system', SYSTEM, 'device')}
+
+          <div className="mx-0.5 h-4 w-px bg-slate-700/80" />
+
+          {/* Combined English & Myanmar Language Selector */}
+          <div
+            className="inline-flex h-8 items-center gap-1 overflow-hidden rounded-lg border border-slate-700 bg-slate-800/90 p-0.5"
+            role="group"
+            aria-label={t('menu.system.language')}
+          >
+            <span className="pl-1.5 pr-0.5 flex items-center">
+              <Icon8 name="globe" size={14} />
+            </span>
+            <button
+              type="button"
+              onClick={() => run('langMy')}
+              className={`inline-flex h-full items-center justify-center rounded-md px-2 text-xs font-bold transition-colors whitespace-nowrap ${
+                lang === 'my'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              {t('menu.lang.my')}
+            </button>
+            <button
+              type="button"
+              onClick={() => run('langEn')}
+              className={`inline-flex h-full items-center justify-center rounded-md px-2 text-xs font-bold transition-colors whitespace-nowrap ${
+                lang === 'en'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              {t('menu.lang.en')}
+            </button>
+          </div>
+        </nav>
       </div>
     </header>
   );

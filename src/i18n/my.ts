@@ -166,7 +166,7 @@ export const my: Record<string, string> = {
   'entry.rate': 'နှုန်း',
   'entry.bet': 'ထိုးငွေ',
   'entry.carry': 'ပို့ငွေ',
-  'entry.codePlaceholder': 'ကုဒ် ဥပမာ 43+  //  **',
+  'entry.codePlaceholder': 'နံပါတ်',
   'entry.amountPlaceholder': 'ပမာဏ',
   'entry.add': 'ထည့်ရန်',
   'entry.invalid': 'ကုဒ် သို့မဟုတ် ပမာဏ မမှန်ပါ — ဘာမှ မထည့်ရသေးပါ။ 43+ သို့မဟုတ် // ကဲ့သို့ ကုဒ်နှင့် 0 ထက် ကြီးသော ပမာဏကို စမ်းပါ။',

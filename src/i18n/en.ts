@@ -154,7 +154,7 @@ export const en: Record<string, string> = {
   'entry.rate': 'Rate',
   'entry.bet': 'Bet',
   'entry.carry': 'Carry',
-  'entry.codePlaceholder': 'Code e.g. 43+  //  **',
+  'entry.codePlaceholder': 'Number',
   'entry.amountPlaceholder': 'Amount',
   'entry.add': 'Add',
   'entry.invalid': 'Invalid code or amount — nothing added. Try a code like 43+ or //, and an amount above 0.',

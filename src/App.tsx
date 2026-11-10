@@ -142,6 +142,44 @@ export default function App() {
   const fighterPersonRef = useRef<HTMLInputElement>(null);
   const carryPersonRef = useRef<HTMLInputElement>(null);
 
+  // Live Device & Viewport Auto-Fit Detector for Desktop Monitors, Laptops & 8"–12" Tablets (iPad / Galaxy Tab)
+  const [viewport, setViewport] = useState(() => {
+    const w = typeof window !== 'undefined' ? window.innerWidth : 1440;
+    const h = typeof window !== 'undefined' ? window.innerHeight : 900;
+    const mode: 'desktop' | 'tablet' | 'mobile' = w >= 1200 ? 'desktop' : w >= 740 ? 'tablet' : 'mobile';
+    return {
+      width: w,
+      height: h,
+      mode,
+      // Lock to 100dvh zero-scroll fit-all on Desktops, Laptops, Landscape Tablets (w >= 900, h >= 620), and Portrait 8"–12" Tablets (w >= 740, h >= 950)
+      lockScreenHeight: (w >= 900 && h >= 620) || (w >= 740 && h >= 950),
+    };
+  });
+
+  useEffect(() => {
+    const updateViewport = () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const mode: 'desktop' | 'tablet' | 'mobile' = w >= 1200 ? 'desktop' : w >= 740 ? 'tablet' : 'mobile';
+      setViewport({
+        width: w,
+        height: h,
+        mode,
+        lockScreenHeight: (w >= 900 && h >= 620) || (w >= 740 && h >= 950),
+      });
+      document.documentElement.dataset.deviceForm = mode;
+    };
+    updateViewport();
+    window.addEventListener('resize', updateViewport);
+    window.addEventListener('orientationchange', updateViewport);
+    window.visualViewport?.addEventListener('resize', updateViewport);
+    return () => {
+      window.removeEventListener('resize', updateViewport);
+      window.removeEventListener('orientationchange', updateViewport);
+      window.visualViewport?.removeEventListener('resize', updateViewport);
+    };
+  }, []);
+
   const { t, setLang } = useLang();
   const showToast = (msg: string, kind: 'ok' | 'err' | 'info' = 'ok') => {
     setToast({ msg, kind });
@@ -1016,10 +1054,14 @@ export default function App() {
                   : '';
 
   return (
-    <div className="min-h-screen bg-[#f3f5f9] text-slate-900">
-
+    <div
+      data-viewport-mode={viewport.mode}
+      className={`flex w-full flex-col bg-[#eef2f6] text-slate-900 ${
+        viewport.lockScreenHeight ? 'h-dvh overflow-hidden' : 'min-h-dvh'
+      }`}
+    >
       {memMode && (
-        <p className="no-print bg-amber-100 px-3 py-1.5 text-center text-sm font-medium text-amber-900">
+        <p className="no-print shrink-0 bg-amber-100 px-3 py-1 text-center text-xs font-medium text-amber-900">
           {t('app.memNotice')}
         </p>
       )}
@@ -1057,7 +1099,11 @@ export default function App() {
         }
       />
 
-      <main className="mx-auto max-w-[1260px] px-3 py-2.5">
+      <main
+        className={`flex w-full max-w-7xl mx-auto flex-1 flex-col px-1.5 sm:px-2 py-1.5 ${
+          viewport.lockScreenHeight ? 'min-h-0 overflow-hidden' : ''
+        }`}
+      >
         {/* The board is always mounted; popups render over it. */}
         <Board
           betDay={betDay}

@@ -34,7 +34,7 @@ export function SuggestSplitsButton(p: SuggestSplitsButtonProps) {
         onFocus={() => setHovered(true)}
         onBlur={() => setHovered(false)}
         title="ကာငွေဖယ်ထုတ်ရန်အခက်အခဲဖြစ်ပါက နှိပ်ကြည့်ပါ"
-        className={`btn h-8 min-h-0 w-full justify-between px-2.5 text-xs font-extrabold whitespace-nowrap transition-all ${
+        className={`btn h-6 2xl:h-7 min-h-0 w-full justify-between px-2 text-xs font-extrabold whitespace-nowrap transition-all ${
           urgentCount > 0
             ? 'border border-teal-500/40 bg-gradient-to-r from-teal-600 to-indigo-600 text-white shadow-xs hover:from-teal-500 hover:to-indigo-500'
             : 'border border-teal-300 bg-teal-50/80 text-teal-900 hover:border-teal-400 hover:bg-teal-100/80'
