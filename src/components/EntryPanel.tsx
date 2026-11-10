@@ -145,10 +145,6 @@ export default function EntryPanel(p: Props) {
       e.stopPropagation();
       setCode('');
       p.onSave();
-    } else if (e.key === 'F2') {
-      e.preventDefault();
-      e.stopPropagation();
-      openEditor(selectedId);
     }
   };
 

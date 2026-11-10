@@ -981,6 +981,15 @@ export default function App() {
         return;
       }
       switch (e.key) {
+        case 'F2':
+          e.preventDefault();
+          if (document.activeElement === fighterCodeRef.current) {
+            fighterCodeRef.current?.blur();
+          } else {
+            fighterCodeRef.current?.focus();
+            fighterCodeRef.current?.select();
+          }
+          break;
         case 'F3':
           e.preventDefault();
           fighterPersonRef.current?.focus();
