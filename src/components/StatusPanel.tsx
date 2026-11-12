@@ -1,6 +1,7 @@
 import { useLang } from '../i18n';
 import type { DashboardResult } from '../shared-vendor/index.ts';
 import { fmt } from '../lib/types';
+import { Icon8 } from './Icons8';
 
 /**
  * Right-hand status panel from the original main screen (§7.4):
@@ -28,15 +29,16 @@ export default function StatusPanel(p: {
       value: '',
       isLimit: true,
       node: (
-        <span className="inline-flex items-center justify-end gap-1">
-          <span className="font-mono text-xs font-extrabold text-slate-900 tabular-nums">{fmt(p.limit)}</span>
+        <span className="inline-flex items-center justify-end gap-1 whitespace-nowrap">
+          <span className="font-mono text-[13px] 2xl:text-[13.5px] font-extrabold text-slate-900 tabular-nums">{fmt(p.limit)}</span>
           <button
             type="button"
             onClick={p.onOpenCalc}
-            className="btn btn-outline h-5 min-h-0 shrink-0 rounded px-1 text-[10px] font-bold whitespace-nowrap text-indigo-700 border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100"
+            className="btn btn-outline h-5.5 min-h-0 shrink-0 gap-0.5 rounded px-1.5 text-[11.5px] font-bold whitespace-nowrap text-indigo-700 border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100"
             title={t('status.limitTitle')}
           >
-            {t('status.limitEdit')}
+            <Icon8 name="edit" size={11} />
+            <span>{t('status.limitEdit')}</span>
           </button>
         </span>
       ),
@@ -63,10 +65,10 @@ export default function StatusPanel(p: {
     <div className="flex h-full min-h-0 flex-1 flex-col gap-1.5">
       <section className="card flex min-h-0 flex-1 flex-col overflow-hidden border-slate-300">
         <div className="h-1 w-full shrink-0 bg-gradient-to-r from-slate-800 via-indigo-600 to-teal-500" />
-        <table className="h-full w-full table-fixed text-xs">
+        <table className="h-full w-full table-fixed text-[13px]">
           <colgroup>
-            <col className="w-[56%]" />
-            <col className="w-[44%]" />
+            <col className="w-[52%]" />
+            <col className="w-[48%]" />
           </colgroup>
           <tbody>
             {rows.map((r) => {
@@ -84,8 +86,8 @@ export default function StatusPanel(p: {
                   <td
                     className={
                       r.highlight
-                        ? `px-2 py-0.5 2xl:py-1.5 text-[11.5px] 2xl:text-xs font-extrabold leading-tight whitespace-nowrap truncate ${tint}`
-                        : `px-2 py-0.5 2xl:py-1 text-[11.5px] 2xl:text-xs font-bold leading-tight whitespace-nowrap truncate text-slate-700 ${r.isLimit ? 'bg-slate-50/70 font-extrabold text-slate-800' : 'bg-slate-50/40'}`
+                        ? `px-2 py-0.5 2xl:py-1.5 text-[13px] 2xl:text-[13.5px] font-extrabold leading-tight whitespace-nowrap ${tint}`
+                        : `px-2 py-0.5 2xl:py-1 text-[13px] 2xl:text-[13.5px] font-bold leading-tight whitespace-nowrap text-slate-800 ${r.isLimit ? 'bg-slate-50/70 font-extrabold text-slate-900' : 'bg-slate-50/40'}`
                     }
                   >
                     {r.label}
@@ -93,8 +95,8 @@ export default function StatusPanel(p: {
                   <td
                     className={
                       r.highlight
-                        ? `px-2 py-0.5 2xl:py-1.5 text-right font-mono text-[13px] 2xl:text-sm font-black tabular-nums whitespace-nowrap ${tint}`
-                        : `px-2 py-0.5 2xl:py-1 text-right font-mono text-xs 2xl:text-[13px] font-extrabold tabular-nums whitespace-nowrap text-slate-900 ${r.isLimit ? 'bg-slate-50/70' : ''} ${r.red ? 'text-rose-600' : ''}`
+                        ? `px-2 py-0.5 2xl:py-1.5 text-right font-mono text-[13.5px] 2xl:text-[14.5px] font-black tabular-nums whitespace-nowrap ${tint}`
+                        : `px-2 py-0.5 2xl:py-1 text-right font-mono text-[13px] 2xl:text-[13.5px] font-extrabold tabular-nums whitespace-nowrap text-slate-900 ${r.isLimit ? 'bg-slate-50/70' : ''} ${r.red ? 'text-rose-600' : ''}`
                     }
                   >
                     {r.node ?? r.value}

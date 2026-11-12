@@ -59,6 +59,7 @@ import {
   PopupDialog,
 } from './components/Dialogs';
 import { UnitSalesDialog } from './components/UnitSalesDialog';
+import { applyFontScaleToDocument, loadFontScale, saveFontScale } from './lib/fontScale';
 
 type Dialog = 'changeDate' | 'delete' | 'unitSales' | 'closeDays' | 'about' | 'highlight' | 'calc' | 'deviceStatus' | null;
 type ReportTab = 'current' | 'daily' | 'weekly' | 'range' | 'selected' | 'uptodate';
@@ -136,11 +137,21 @@ export default function App() {
   const [carryEnabled, setCarryEnabled] = useState(true);
   // Modern soft rose-coral highlight for over-limit cells (editable via System -> Highlight Color)
   const [highlight, setHighlight] = useState('#fecdd3');
+  const [fontScale, setFontScale] = useState<number>(() => loadFontScale());
   const [showChatIngest, setShowChatIngest] = useState(false);
   const fighterCodeRef = useRef<HTMLInputElement>(null);
   const carryCodeRef = useRef<HTMLInputElement>(null);
   const fighterPersonRef = useRef<HTMLInputElement>(null);
   const carryPersonRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    applyFontScaleToDocument(fontScale);
+  }, [fontScale]);
+
+  const handleFontScaleChange = (nextPct: number) => {
+    const saved = saveFontScale(nextPct);
+    setFontScale(saved);
+  };
 
   // Live Device & Viewport Auto-Fit Detector for Desktop Monitors, Laptops & 8"–12" Tablets (iPad / Galaxy Tab)
   const [viewport, setViewport] = useState(() => {
@@ -186,6 +197,8 @@ export default function App() {
     setTimeout(() => setToast(null), kind === 'err' ? 5000 : 3500);
   };
 
+  const hasInitialFocusedRef = useRef(false);
+
   useEffect(() => {
     (async () => {
       // Auto-detect whether this browser/device is a new user/device (Fresh Start)
@@ -225,9 +238,19 @@ export default function App() {
       if (isFresh) {
         showToast(t('toast.freshStartDetected'), 'info');
       }
+      setTimeout(() => {
+        fighterCodeRef.current?.focus();
+      }, 0);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (data && !hasInitialFocusedRef.current) {
+      hasInitialFocusedRef.current = true;
+      fighterCodeRef.current?.focus();
+    }
+  }, [data]);
 
   const fighters = useMemo(() => sortPeople((data?.people ?? []).filter((x) => x.side === 'fighter')), [data]);
   const owners = useMemo(() => sortPeople((data?.people ?? []).filter((x) => x.side === 'owner')), [data]);
@@ -243,31 +266,51 @@ export default function App() {
     [data, betDay, session],
   );
 
-  // Dashboard + board are SAVED-ONLY (item 5): unsaved entry rows live in
-  // the entry grids and never join the board or the totals. Refr is a
-  // manual reload (re-reads saved data), not a visibility toggle.
-  const board = useMemo(() => {
+  // Saved-only board (used as base for SuggestSplitsModal analysis which adds unsaved rows itself)
+  const savedBoard = useMemo(() => {
     const betRows = savedBet.map((d) => ({ no: d.no, amount: d.amount }));
     const carryRowsFlat = savedCarry.map((d) => ({ no: d.no, amount: d.amount }));
     return computeBoard(betRows, carryRowsFlat);
   }, [savedBet, savedCarry]);
 
+  // Live board = saved session details + active unsaved Fighter/Carry entry rows
+  // so 00–99 exposure, # Over-Limit, Pass, Back, Tens, BTbuy, and Crop respond immediately.
+  const board = useMemo(() => {
+    const betRows = [
+      ...savedBet.map((d) => ({ no: d.no, amount: d.amount })),
+      ...fighterRows.flatMap((r) => r.numbers),
+    ];
+    const carryRowsFlat = [
+      ...savedCarry.map((d) => ({ no: d.no, amount: d.amount })),
+      ...carryRows.flatMap((r) => r.numbers),
+    ];
+    return computeBoard(betRows, carryRowsFlat);
+  }, [savedBet, savedCarry, fighterRows, carryRows]);
+
   const overLimit = useMemo(() => computeOverLimit(board, limit), [board, limit]);
 
   const dash = useMemo(() => {
-    const betTotal = savedBet.reduce((s, d) => s + d.amount, 0);
-    const carryTotal = savedCarry.reduce((s, d) => s + d.amount, 0);
+    const allBet = [
+      ...savedBet.map((d) => ({ no: d.no, amount: d.amount })),
+      ...fighterRows.flatMap((r) => r.numbers),
+    ];
+    const allCarry = [
+      ...savedCarry.map((d) => ({ no: d.no, amount: d.amount })),
+      ...carryRows.flatMap((r) => r.numbers),
+    ];
+    const betTotal = allBet.reduce((s, d) => s + d.amount, 0);
+    const carryTotal = allCarry.reduce((s, d) => s + d.amount, 0);
     const luckyNo = luckyNow?.no ?? null;
-    const winSum = (rows: DetailRow[]) => {
+    const winSum = (rows: { no: string; amount: number }[]) => {
       if (!luckyNo) return 0;
       return rows.filter((d) => d.no === luckyNo).reduce((s, d) => s + d.amount, 0);
     };
-    return dashboard(betTotal, carryTotal, winSum(savedBet), winSum(savedCarry), {
+    return dashboard(betTotal, carryTotal, winSum(allBet), winSum(allCarry), {
       limit,
       commission: data?.settings?.commission ?? 16,
       rate: data?.settings?.rate ?? 80,
     });
-  }, [savedBet, savedCarry, luckyNow, limit, data]);
+  }, [savedBet, savedCarry, fighterRows, carryRows, luckyNow, limit, data]);
 
   const changeFighter = (no: string) => {
     setFighterNo(no);
@@ -576,28 +619,76 @@ export default function App() {
     return e ? [makeEntryRow(e, String(amt(Number(row.over))), true)] : [];
   };
 
-  const passRows = (rows: OverLimitRow[], round: boolean) => {
-    // Rounded-to-tens: equal parts collapse to a single reverse row.
-    if (round) {
-      const out: EntryRow[] = [];
-      rows.forEach((r) => {
-        if (typeof r.over === 'string' && r.over.includes('/')) {
-          const [a, b] = r.over.split('/').map(Number);
-          const ra = roundUpToTen(a);
-          const rb = roundUpToTen(b);
-          if (ra === rb) {
-            const e = expandCode(`${r.no}+`, String(ra));
-            if (e) out.push(makeEntryRow(e, String(ra), true));
-            return;
+  const passRows = (rows: OverLimitRow[], round: boolean, fallbackSingleOnly = false) => {
+    if (rows.length > 0) {
+      let out: EntryRow[] = [];
+      if (round) {
+        rows.forEach((r) => {
+          if (typeof r.over === 'string' && r.over.includes('/')) {
+            const [a, b] = r.over.split('/').map(Number);
+            const ra = roundUpToTen(a);
+            const rb = roundUpToTen(b);
+            if (ra === rb) {
+              const e = expandCode(`${r.no}+`, String(ra));
+              if (e) out.push(makeEntryRow(e, String(ra), true));
+              return;
+            }
           }
-        }
-        out.push(...overRowToEntryRows(r, true));
-      });
-      setCarryRows((prev) => [...prev, ...out]);
-    } else {
-      setCarryRows((prev) => [...prev, ...rows.flatMap((r) => overRowToEntryRows(r, false))]);
+          out.push(...overRowToEntryRows(r, true));
+        });
+      } else {
+        out = rows.flatMap((r) => overRowToEntryRows(r, false));
+      }
+      if (out.length > 0) {
+        setCarryRows((prev) => [...prev, ...out]);
+        showToast(t('toast.movedToCarry'), 'ok');
+        return;
+      }
     }
-    showToast(t('toast.movedToCarry'));
+
+    // Fallback when no numbers exceed the limit yet, but the operator has unsaved Fighter rows
+    // and clicks Pass (>), Pass All (>>), or Pass Tens (>>>) to move Fighter rows to Carry:
+    if (fighterRows.length > 0) {
+      const targetFighter = fallbackSingleOnly ? [fighterRows[0]] : fighterRows;
+      const movedIds = new Set(targetFighter.map((r) => r.id));
+      const converted: EntryRow[] = targetFighter.map((r) => {
+        if (!round) return { ...r, id: uid(), fromLimit: true };
+        const numAmt = roundUpToTen(Number(r.amountText) || 0);
+        const amtStr = numAmt > 0 ? String(numAmt) : r.amountText;
+        const e = expandCode(r.codeNo, amtStr);
+        return e ? makeEntryRow(e, amtStr, true) : { ...r, id: uid(), fromLimit: true };
+      });
+      setFighterRows((prev) => prev.filter((r) => !movedIds.has(r.id)));
+      setCarryRows((prev) => [...prev, ...converted]);
+      showToast(t('toast.movedToCarry'), 'ok');
+      return;
+    }
+
+    showToast(t('board.overEmpty'), 'info');
+  };
+
+  const handleBackOne = () => {
+    if (carryRows.length === 0) {
+      showToast(t('toast.nothingToSave'), 'info');
+      return;
+    }
+    setCarryRows((prev) => {
+      const limitIdx = prev.map((r) => Boolean(r.fromLimit)).lastIndexOf(true);
+      const targetIdx = limitIdx !== -1 ? limitIdx : prev.length - 1;
+      return prev.filter((_, i) => i !== targetIdx);
+    });
+    showToast(`${t('board.backOne')} — 1`, 'info');
+  };
+
+  const handleBackAll = () => {
+    if (carryRows.length === 0) {
+      showToast(t('toast.nothingToSave'), 'info');
+      return;
+    }
+    const hasFromLimit = carryRows.some((r) => r.fromLimit);
+    const removedCount = hasFromLimit ? carryRows.filter((r) => r.fromLimit).length : carryRows.length;
+    setCarryRows((prev) => (prev.some((r) => r.fromLimit) ? prev.filter((r) => !r.fromLimit) : []));
+    showToast(`${t('board.backAll')} (${removedCount})`, 'info');
   };
 
   /** BTbuy: top every below-limit number up to the limit, into the Fighter entry. */
@@ -692,11 +783,39 @@ export default function App() {
 
   const reload = async () => setData(await loadAll());
 
-  const saveLucky = async (no: string) => {
+  const saveLucky = async (no: string, targetDay = betDay, targetSession: Session = session, oldKey?: string) => {
     if (!data) return;
-    const rec: Lucky = { key: `${betDay}|${session}`, betDay, session, no, noR: reverseNo(no), updatedAt: Date.now() };
+    const newKey = `${targetDay}|${targetSession}`;
+    if (oldKey && oldKey !== newKey) {
+      await dbDelete('lucky', oldKey);
+    }
+    const rec: Lucky = {
+      key: newKey,
+      betDay: targetDay,
+      session: targetSession,
+      no,
+      noR: reverseNo(no),
+      updatedAt: Date.now(),
+    };
     await dbPut('lucky', rec);
-    setData({ ...data, lucky: [...data.lucky.filter((l) => l.key !== rec.key), rec] });
+    setData((prev) =>
+      prev
+        ? {
+            ...prev,
+            lucky: [...prev.lucky.filter((l) => l.key !== rec.key && l.key !== oldKey), rec],
+          }
+        : prev,
+    );
+    if (oldKey) {
+      showToast(t('lucky.updated', { day: targetDay, session: targetSession }));
+    }
+  };
+
+  const deleteLucky = async (key: string) => {
+    if (!data) return;
+    await dbDelete('lucky', key);
+    setData((prev) => (prev ? { ...prev, lucky: prev.lucky.filter((l) => l.key !== key) } : prev));
+    showToast(t('lucky.deleted'), 'info');
   };
 
   const oldNumbers = (amount: string) => {
@@ -1121,6 +1240,7 @@ export default function App() {
           onOpenCalc={() => setDialog('calc')}
           dash={dash}
           board={board}
+          savedBoard={savedBoard}
           overLimit={overLimit}
           savedBetCount={savedBet.length}
           savedCarryCount={savedCarry.length}
@@ -1151,16 +1271,14 @@ export default function App() {
           onClearCarry={() => setCarryRows([])}
           onSaveBet={() => requestSave('bet')}
           onSaveCarry={() => requestSave('carry')}
-          onPassAll={() => passRows(overLimit, false)}
-          onPassOne={(r) => passRows([r], false)}
-          onPassTens={() => passRows(overLimit, true)}
+          onPassAll={() => passRows(overLimit, false, false)}
+          onPassOne={(r) => passRows([r], false, true)}
+          onPassSelected={(rows) => passRows(rows, false, true)}
+          onPassTens={(rows) => passRows(rows && rows.length > 0 ? rows : overLimit, true, false)}
           onBTbuy={handleBTbuy}
           onCrop={handleCrop}
-          onBack={() => setCarryRows((prev) => prev.filter((r) => !r.fromLimit))}
-          onBackOne={() => setCarryRows((prev) => {
-            const idx = prev.map((r) => r.fromLimit).lastIndexOf(true);
-            return idx === -1 ? prev : prev.filter((_, i) => i !== idx);
-          })}
+          onBack={handleBackAll}
+          onBackOne={handleBackOne}
           lastClipboard={lastClipboard}
           onCopyLastClipboard={async () => {
             if (lastClipboard && (await copyText(lastClipboard))) showToast(t('board.lastSaveCopied'));
@@ -1191,7 +1309,15 @@ export default function App() {
       {popup && (
         <PopupDialog title={popupTitle} onClose={() => setPopup(null)} wide={true}>
           {popup.kind === 'lucky' && (
-            <LuckyPage betDay={betDay} session={session} current={luckyNow} all={data.lucky} onSave={(no) => void saveLucky(no)} onOldNumbers={oldNumbers} />
+            <LuckyPage
+              betDay={betDay}
+              session={session}
+              current={luckyNow}
+              all={data.lucky}
+              onSave={(no, d, s, oldKey) => void saveLucky(no, d, s, oldKey)}
+              onDelete={(key) => void deleteLucky(key)}
+              onOldNumbers={oldNumbers}
+            />
           )}
           {popup.kind === 'people' && (
             <div className="space-y-3">
@@ -1277,12 +1403,20 @@ export default function App() {
           limit={limit}
           commission={data.settings?.commission ?? 16}
           rate={data.settings?.rate ?? 80}
+          fontScale={fontScale}
+          onFontScaleChange={handleFontScaleChange}
           onApply={(l, c, r) => void saveCalc(l, c, r)}
           onClose={() => setDialog(null)}
         />
       )}
       {dialog === 'closeDays' && <CloseDaysDialog onClose={() => setDialog(null)} />}
-      {dialog === 'about' && <AboutDialog onClose={() => setDialog(null)} />}
+      {dialog === 'about' && (
+        <AboutDialog
+          fontScale={fontScale}
+          onFontScaleChange={handleFontScaleChange}
+          onClose={() => setDialog(null)}
+        />
+      )}
       {dialog === 'highlight' && <HighlightDialog color={highlight} onApply={setHighlight} onClose={() => setDialog(null)} />}
       {dialog === 'deviceStatus' && (
         <DeviceStatusDialog

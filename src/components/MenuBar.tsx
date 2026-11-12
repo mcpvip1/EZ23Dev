@@ -119,13 +119,13 @@ export default function MenuBar(p: {
         <button
           type="button"
           onClick={() => setOpen(isOpen ? null : id)}
-          className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold whitespace-nowrap transition-colors ${
+          className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13.5px] font-bold whitespace-nowrap transition-colors ${
             isOpen
               ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-slate-200 hover:bg-slate-800 hover:text-white'
+              : 'text-slate-100 hover:bg-slate-800 hover:text-white'
           }`}
         >
-          <Icon8 name={menuIcon} size={14} />
+          <Icon8 name={menuIcon} size={15} />
           <span>{t(labelKey)}</span>
           <Icon8
             name="chevron-down"
@@ -134,30 +134,30 @@ export default function MenuBar(p: {
           />
         </button>
         {isOpen && (
-          <div className="absolute right-0 top-full z-40 mt-1.5 min-w-60 rounded-xl border border-slate-200/90 bg-white p-1.5 shadow-2xl ring-1 ring-slate-900/5">
+          <div className="absolute right-0 top-full z-40 mt-1.5 min-w-68 rounded-xl border border-slate-200/90 bg-white p-1.5 shadow-2xl ring-1 ring-slate-900/5">
             {items.map((it) => (
               <button
                 key={it.key}
                 type="button"
                 onClick={() => run(it.action)}
-                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-semibold transition-colors ${
+                className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-[13.5px] font-bold transition-colors ${
                   it.danger
                     ? 'text-rose-600 hover:bg-rose-50 hover:text-rose-700'
-                    : 'text-slate-700 hover:bg-indigo-50/80 hover:text-indigo-700'
+                    : 'text-slate-800 hover:bg-indigo-50/80 hover:text-indigo-700'
                 }`}
               >
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-2.5 whitespace-nowrap">
                   <span className="flex w-4 items-center justify-center">
                     {it.checked ? (
-                      <Icon8 name="checkmark" size={14} />
+                      <Icon8 name="checkmark" size={15} />
                     ) : it.icon ? (
-                      <Icon8 name={it.icon} size={14} />
+                      <Icon8 name={it.icon} size={15} />
                     ) : null}
                   </span>
                   <span>{t(it.key)}</span>
                 </span>
                 {it.shortcut && (
-                  <kbd className="rounded-md border border-slate-200 bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-600">
+                  <kbd className="rounded-md border border-slate-200 bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-slate-600">
                     {it.shortcut}
                   </kbd>
                 )}
@@ -188,7 +188,7 @@ export default function MenuBar(p: {
 
         {/* Left Zone: Active Date, Session Switcher & Device Status */}
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-slate-300 whitespace-nowrap">
+          <span className="text-[13.5px] font-bold text-slate-200 whitespace-nowrap">
             {lang === 'my' ? 'လက်ရှိရက်စွဲ:' : 'Current Date:'}
           </span>
           {p.right}
@@ -197,7 +197,7 @@ export default function MenuBar(p: {
               type="button"
               onClick={() => run('deviceStatus')}
               title={`${t('device.title')} — ${p.deviceProfile.deviceId}`}
-              className={`inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 font-mono text-[11px] font-bold transition-colors whitespace-nowrap ${
+              className={`inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 font-mono text-[12px] font-bold transition-colors whitespace-nowrap ${
                 isFresh
                   ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25'
                   : 'border-slate-700 bg-slate-800/90 text-slate-300 hover:border-slate-600 hover:text-white'
@@ -229,10 +229,10 @@ export default function MenuBar(p: {
             <button
               type="button"
               onClick={() => run('langMy')}
-              className={`inline-flex h-full items-center justify-center rounded-md px-2 text-xs font-bold transition-colors whitespace-nowrap ${
+              className={`inline-flex h-full items-center justify-center rounded-md px-2.5 text-[13px] font-bold transition-colors whitespace-nowrap ${
                 lang === 'my'
                   ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'text-slate-400 hover:text-white'
+                  : 'text-slate-300 hover:text-white'
               }`}
             >
               {t('menu.lang.my')}
@@ -240,10 +240,10 @@ export default function MenuBar(p: {
             <button
               type="button"
               onClick={() => run('langEn')}
-              className={`inline-flex h-full items-center justify-center rounded-md px-2 text-xs font-bold transition-colors whitespace-nowrap ${
+              className={`inline-flex h-full items-center justify-center rounded-md px-2.5 text-[13px] font-bold transition-colors whitespace-nowrap ${
                 lang === 'en'
                   ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'text-slate-400 hover:text-white'
+                  : 'text-slate-300 hover:text-white'
               }`}
             >
               {t('menu.lang.en')}

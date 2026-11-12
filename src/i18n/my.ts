@@ -249,7 +249,7 @@ export const my: Record<string, string> = {
   'dialog.closeDays.empty': 'ပိတ်ထားသော နေ့ မရှိပါ။',
   'dialog.closeDays.delete': 'ဖျက်ရန်',
 
-  'dialog.about': 'ကျွန်ုပ်အကြောင်း — ပုံစံ အတိုချုပ်',
+  'dialog.about': 'ကျွန်ုပ်အကြောင်း နှင့် စာလုံးအရွယ်အစား ချိန်ညှိခြင်း',
   'dialog.about.cheat': `စုံ စုံ  + +      မ မ  - -
 အပူး      //  (00, 11, 22 … 99)
 ညီကို   */  (01, 10, 12, 21 …)
@@ -261,6 +261,14 @@ export const my: Record<string, string> = {
 နောက်တွဲ  /d  (နောက်: 0d … 9d)
 ဂဏန်းပေါင်း     d*  (d အတွက် ဂဏန်းပေါင်း အစု)`,
   'dialog.about.note': 'EASY v5.5.1 ဝက်ဘ် ပြန်လည်တည်ဆောက်မှု — အဓိက လုပ်ငန်းစဉ်: ထိုးငွေ / ပို့ငွေ ထည့်ရန် → ဇယား → ကန့်သတ်ချက် ကျော်လျှင် အထက်သို့ ပို့ရန် → ထွက်ဂဏန်း → အခြေချစာရင်း အစီရင်ခံစာများ။',
+  'dialog.fontScale.title': 'စာလုံး အရွယ်အစား ချိန်ညှိရန် (မြန်မာစာ / UI Font Size)',
+  'dialog.fontScale.note': 'မျက်နှာပြင် အရွယ်အစားအလိုက် မြန်မာစာလုံးနှင့် ဂဏန်းအားလုံးကို ပိုမိုရှင်းလင်းစွာ မြင်ရစေရန် အရွယ်အစား ချိန်ညှိနိုင်ပါသည် (85% – 130%)။',
+  'dialog.fontScale.sliderLabel': 'စာလုံး အရွယ်အစား ရာခိုင်နှုန်း',
+  'dialog.fontScale.reset': 'မူလအတိုင်း (100%)',
+  'dialog.fontScale.decrease': 'စာလုံး သေးရန် (-)',
+  'dialog.fontScale.increase': 'စာလုံး ကြီးရန် (+)',
+  'dialog.fontScale.previewLabel': 'နမူနာ စာသား:',
+  'dialog.fontScale.previewText': 'ကန့်သတ်ချက် 40,000 · ဖိုက်တာ ထိုးငွေ / ဒိုင် ပို့ငွေ · 43+ = 1,000 Ks',
 
   'dialog.highlight': 'မီးမောင်းထိုးအရောင်',
   'dialog.highlight.note': 'ကန့်သတ်ချက် ကျော်သော ဇယား အကွက်များအတွက် အရောင် (မူရင်း စိမ်းပြာ၊ စုစုပေါင်း အတန်းကဲ့သို့)။',
@@ -287,6 +295,13 @@ export const my: Record<string, string> = {
   'lucky.colSession': 'အချိန်ပိုင်း',
   'lucky.colLuckyNo': 'ထွက်ဂဏန်း',
   'lucky.colReverse': 'ပြောင်းပြန်',
+  'lucky.colAction': 'လုပ်ဆောင်ချက်',
+  'lucky.edit': 'ပြင်ရန်',
+  'lucky.delete': 'ဖျက်ရန်',
+  'lucky.cancel': 'ပယ်ဖျက်',
+  'lucky.updated': '{day} {session} ထွက်ဂဏန်း ပြင်ဆင်ပြီးပါပြီ။',
+  'lucky.deleted': 'ထွက်ဂဏန်း ဖျက်ပြီးပါပြီ။',
+  'lucky.clickToEditHint': 'ထွက်ဂဏန်း သို့မဟုတ် ပြင်ရန် ခလုတ်ကို နှိပ်၍ ပြန်ပြင်နိုင်ပါသည်။',
 
   // ---- Reports ----
   'reports.tab.current': 'လက်ရှိ',

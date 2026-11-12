@@ -237,7 +237,7 @@ export const en: Record<string, string> = {
   'dialog.closeDays.empty': 'No closed days.',
   'dialog.closeDays.delete': 'Delete',
 
-  'dialog.about': 'About Me — pattern cheat-sheet',
+  'dialog.about': 'About & Display Font Settings — pattern cheat-sheet',
   'dialog.about.cheat': `even even  + +      odd odd  - -
 pair      //  (00, 11, 22 … 99)
 brother   */  (01, 10, 12, 21 …)
@@ -249,6 +249,14 @@ f-series  d/  (front: d0 … d9)
 b-series  /d  (back: 0d … 9d)
 break     d*  (digit-sum set for d)`,
   'dialog.about.note': 'EASY v5.5.1 web rebuild — core loop: enter Bet / Carry → board → limit pass-up → LuckyNo → settlement reports.',
+  'dialog.fontScale.title': 'Global UI & Myanmar Font Size',
+  'dialog.fontScale.note': 'Scale all UI text and Myanmar characters globally for optimal legibility across different display resolutions (85% – 130%).',
+  'dialog.fontScale.sliderLabel': 'UI Font Scale Percentage',
+  'dialog.fontScale.reset': 'Reset (100%)',
+  'dialog.fontScale.decrease': 'Decrease font size (-)',
+  'dialog.fontScale.increase': 'Increase font size (+)',
+  'dialog.fontScale.previewLabel': 'Live Preview:',
+  'dialog.fontScale.previewText': 'ကန့်သတ်ချက် 40,000 · ဖိုက်တာ ထိုးငွေ / ဒိုင် ပို့ငွေ · 43+ = 1,000 Ks',
 
   'dialog.highlight': 'Highlight Color',
   'dialog.highlight.note': 'Colour used for board cells over the limit (default cyan, like the totals row).',
@@ -275,6 +283,13 @@ break     d*  (digit-sum set for d)`,
   'lucky.colSession': 'Session',
   'lucky.colLuckyNo': 'LuckyNo',
   'lucky.colReverse': 'Reverse',
+  'lucky.colAction': 'Actions',
+  'lucky.edit': 'Edit',
+  'lucky.delete': 'Delete',
+  'lucky.cancel': 'Cancel',
+  'lucky.updated': 'Updated draw for {day} {session}.',
+  'lucky.deleted': 'Draw deleted.',
+  'lucky.clickToEditHint': 'Click any number or Edit button to modify after adding.',
 
   // ---- Reports ----
   'reports.tab.current': 'Current',

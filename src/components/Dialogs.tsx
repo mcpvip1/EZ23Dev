@@ -3,6 +3,14 @@ import type { DeleteScope } from '../lib/db';
 import { deleteScope } from '../lib/db';
 import { useLang } from '../i18n';
 import { Icon8 } from './Icons8';
+import {
+  clampFontScale,
+  DEFAULT_FONT_SCALE,
+  FONT_SCALE_PRESETS,
+  FONT_SCALE_STEP,
+  MAX_FONT_SCALE,
+  MIN_FONT_SCALE,
+} from '../lib/fontScale';
 
 /**
  * Topmost-Esc stack: every modal/popup registers its onClose here, and a
@@ -57,15 +65,15 @@ export function Modal(p: { title: string; onClose: () => void; wide?: boolean; c
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-slate-200/80 bg-gradient-to-r from-slate-50 to-white px-5 py-3">
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-200/80 bg-gradient-to-r from-slate-50 to-white px-5 py-3.5">
           <div className="flex items-center gap-2.5">
-            <span className="h-2 w-2 rounded-full bg-indigo-600" />
-            <h2 className="text-sm font-extrabold tracking-tight text-slate-900">{p.title}</h2>
+            <span className="h-2.5 w-2.5 rounded-full bg-indigo-600" />
+            <h2 className="text-[15.5px] font-extrabold tracking-tight text-slate-900">{p.title}</h2>
           </div>
           <button
             type="button"
             onClick={p.onClose}
-            className="btn btn-ghost btn-sm h-7 w-7 min-h-0 rounded-lg p-0 text-xs text-slate-500 hover:bg-slate-200/70 hover:text-slate-900"
+            className="btn btn-ghost btn-sm h-7.5 w-7.5 min-h-0 rounded-lg p-0 text-xs text-slate-500 hover:bg-slate-200/70 hover:text-slate-900"
             aria-label={t('dialog.close')}
           >
             <Icon8 name="close" size={16} />
@@ -83,6 +91,122 @@ export function PopupDialog(p: { title: string; onClose: () => void; wide?: bool
     <Modal title={p.title} onClose={p.onClose} wide={p.wide ?? true}>
       {p.children}
     </Modal>
+  );
+}
+
+/**
+ * Reusable global UI & Myanmar Font Size Adjustment Slider section
+ * shown inside Settings (CalcDialog) and About (AboutDialog).
+ */
+export function FontScaleControl(p: {
+  fontScale: number;
+  onChange: (pct: number) => void;
+}) {
+  const { t } = useLang();
+  const current = clampFontScale(p.fontScale);
+
+  return (
+    <div className="rounded-xl border border-indigo-200/90 bg-gradient-to-r from-indigo-50/70 via-slate-50 to-white p-3.5 shadow-2xs">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-600/15">
+            <Icon8 name="settings" size={14} />
+          </span>
+          <span className="text-xs font-extrabold text-slate-900">
+            {t('dialog.fontScale.title')}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span
+            data-testid="font-scale-badge"
+            className="rounded-md bg-indigo-600 px-2 py-0.5 font-mono text-xs font-extrabold text-white tabular-nums"
+          >
+            {current}%
+          </span>
+          {current !== DEFAULT_FONT_SCALE && (
+            <button
+              type="button"
+              onClick={() => p.onChange(DEFAULT_FONT_SCALE)}
+              className="btn btn-outline btn-sm h-6 min-h-0 px-2 text-[11px] font-bold"
+            >
+              {t('dialog.fontScale.reset')}
+            </button>
+          )}
+        </div>
+      </div>
+
+      <p className="mt-1 text-xs leading-relaxed text-slate-600">
+        {t('dialog.fontScale.note')}
+      </p>
+
+      {/* Slider + Step Controls */}
+      <div className="mt-2.5 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => p.onChange(clampFontScale(current - FONT_SCALE_STEP))}
+          disabled={current <= MIN_FONT_SCALE}
+          aria-label={t('dialog.fontScale.decrease')}
+          className="btn btn-outline btn-sm h-8 w-8 min-h-0 shrink-0 p-0 font-mono text-sm font-black"
+        >
+          −
+        </button>
+
+        <input
+          type="range"
+          min={MIN_FONT_SCALE}
+          max={MAX_FONT_SCALE}
+          step={FONT_SCALE_STEP}
+          value={current}
+          onChange={(e) => p.onChange(clampFontScale(Number(e.target.value)))}
+          aria-label={t('dialog.fontScale.sliderLabel')}
+          className="h-2 flex-1 cursor-pointer appearance-none rounded-lg bg-slate-200 accent-indigo-600"
+        />
+
+        <button
+          type="button"
+          onClick={() => p.onChange(clampFontScale(current + FONT_SCALE_STEP))}
+          disabled={current >= MAX_FONT_SCALE}
+          aria-label={t('dialog.fontScale.increase')}
+          className="btn btn-outline btn-sm h-8 w-8 min-h-0 shrink-0 p-0 font-mono text-sm font-black"
+        >
+          +
+        </button>
+      </div>
+
+      {/* Quick Presets */}
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-1.5">
+        <div className="flex flex-wrap items-center gap-1">
+          {FONT_SCALE_PRESETS.map((preset) => {
+            const active = current === preset;
+            return (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => p.onChange(preset)}
+                className={`btn btn-sm h-6 min-h-0 px-2.5 font-mono text-[11px] font-extrabold ${
+                  active ? 'btn-primary' : 'btn-outline'
+                }`}
+              >
+                {preset}%
+              </button>
+            );
+          })}
+        </div>
+        <span className="font-mono text-[11px] font-semibold text-slate-500">
+          {MIN_FONT_SCALE}% – {MAX_FONT_SCALE}%
+        </span>
+      </div>
+
+      {/* Live Myanmar & Numeric Legibility Preview */}
+      <div className="mt-2.5 rounded-lg border border-slate-200/90 bg-white px-3 py-2 text-xs shadow-2xs">
+        <span className="mr-1.5 font-bold text-indigo-700">
+          {t('dialog.fontScale.previewLabel')}
+        </span>
+        <span className="font-mono font-bold text-slate-900">
+          {t('dialog.fontScale.previewText')}
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -304,12 +428,14 @@ export function DeleteDialog(p: { betDay: string; onDone: (msg: string) => void;
 }
 
 /**
- * Limit / Calc popup (D12 + D13).
+ * Limit / Calc / Display Settings popup (D12 + D13).
  */
 export function CalcDialog(p: {
   limit: number;
   commission: number;
   rate: number;
+  fontScale?: number;
+  onFontScaleChange?: (pct: number) => void;
   onApply: (limit: number, commission: number, rate: number) => void;
   onClose: () => void;
 }) {
@@ -354,6 +480,16 @@ export function CalcDialog(p: {
           />
         </label>
       </div>
+
+      {p.onFontScaleChange && (
+        <div className="mt-3">
+          <FontScaleControl
+            fontScale={p.fontScale ?? DEFAULT_FONT_SCALE}
+            onChange={p.onFontScaleChange}
+          />
+        </div>
+      )}
+
       <div className="mt-4 flex justify-end gap-2 border-t border-slate-100 pt-3">
         <button type="button" onClick={p.onClose} className="btn btn-ghost h-8 min-h-0 px-3 text-xs">
           {t('dialog.calc.cancel')}
@@ -442,14 +578,26 @@ export function CloseDaysDialog(p: { onClose: () => void }) {
   );
 }
 
-export function AboutDialog(p: { onClose: () => void }) {
+export function AboutDialog(p: {
+  fontScale: number;
+  onFontScaleChange: (pct: number) => void;
+  onClose: () => void;
+}) {
   const { t } = useLang();
   return (
     <Modal title={t('dialog.about')} onClose={p.onClose}>
-      <pre className="rounded-lg border border-slate-200 bg-slate-50 p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap text-slate-700">
-        {t('dialog.about.cheat')}
-      </pre>
-      <p className="mt-2 text-xs text-slate-500">{t('dialog.about.note')}</p>
+      <div className="space-y-3.5">
+        <FontScaleControl
+          fontScale={p.fontScale}
+          onChange={p.onFontScaleChange}
+        />
+        <div>
+          <pre className="rounded-lg border border-slate-200 bg-slate-50 p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap text-slate-700">
+            {t('dialog.about.cheat')}
+          </pre>
+          <p className="mt-2 text-xs text-slate-500">{t('dialog.about.note')}</p>
+        </div>
+      </div>
     </Modal>
   );
 }

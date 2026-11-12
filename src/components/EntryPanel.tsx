@@ -196,7 +196,7 @@ export default function EntryPanel(p: Props) {
           }}
           type="text"
           list={`person-datalist-${p.side}`}
-          className="input-yellow h-7 min-w-0 flex-1 px-2 font-mono text-xs font-extrabold"
+          className="input-yellow h-7 min-w-0 flex-1 px-2 font-mono text-[13.5px] font-extrabold"
           placeholder={p.side === 'bet' ? 'Fighter No.' : 'Owner No.'}
           value={p.personNo}
           onChange={(e) => {
@@ -241,7 +241,7 @@ export default function EntryPanel(p: Props) {
             setSortMode((m) => (m === 'entry' ? 'code' : 'entry'));
             p.onOrder();
           }}
-          className={`btn btn-sm h-7 min-h-0 shrink-0 gap-1 px-1.5 2xl:px-2 text-[11px] xl:text-xs whitespace-nowrap ${
+          className={`btn btn-sm h-7 min-h-0 shrink-0 gap-1 px-1.5 text-[12.5px] font-bold whitespace-nowrap ${
             sortMode === 'code' ? 'btn-primary' : 'btn-outline'
           }`}
           aria-pressed={sortMode === 'code'}
@@ -254,7 +254,7 @@ export default function EntryPanel(p: Props) {
         <button
           type="button"
           onClick={p.onDots}
-          className="btn btn-outline btn-sm h-7 min-h-0 shrink-0 gap-1 px-1.5 2xl:px-2 text-[11px] xl:text-xs whitespace-nowrap"
+          className="btn btn-outline btn-sm h-7 min-h-0 shrink-0 gap-1 px-1.5 text-[12.5px] font-bold whitespace-nowrap"
           title={t('entry.browseTitle')}
         >
           <Icon8 name="browse" size={12} />
@@ -265,11 +265,11 @@ export default function EntryPanel(p: Props) {
           <button
             type="button"
             onClick={p.onOpenChatIngest}
-            className="btn btn-primary btn-sm h-7 min-h-0 shrink-0 gap-1 px-1.5 2xl:px-2 text-[11px] xl:text-xs font-bold whitespace-nowrap"
-            title="Smart Chat Message Ingestion (Viber / Telegram / SMS)"
+            className="btn btn-primary btn-sm h-7 min-h-0 shrink-0 gap-1 px-1.5 text-[12.5px] font-bold whitespace-nowrap"
+            title="Copy — Paste & Import Bets (Ctrl+I)"
           >
-            <Icon8 name="inbox" size={12} />
-            <span>Chat</span>
+            <Icon8 name="clipboard" size={12} />
+            <span>Copy</span>
           </button>
         )}
       </div>
@@ -279,12 +279,12 @@ export default function EntryPanel(p: Props) {
       {/* Commission / Rate Metadata Row */}
       <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/60 px-2 py-1">
         <div className="flex items-center gap-2">
-          <label className="flex items-center gap-1 text-xs font-bold text-slate-700">
+          <label className="flex items-center gap-1.5 text-[13px] font-bold text-slate-800">
             <span>{t('entry.com')}</span>
             <input
               ref={comRef}
               type="number"
-              className="input h-6 w-12 xl:w-13 px-1.5 py-0 font-mono text-xs font-extrabold text-slate-900"
+              className="input h-6 w-12 xl:w-13 px-1.5 py-0 font-mono text-[13px] font-extrabold text-slate-900"
               value={p.commission}
               onChange={(e) => p.onCommissionChange(Number(e.target.value) || 0)}
               onKeyDown={(e) => {
@@ -296,12 +296,12 @@ export default function EntryPanel(p: Props) {
               }}
             />
           </label>
-          <label className="flex items-center gap-1 text-xs font-bold text-slate-700">
+          <label className="flex items-center gap-1.5 text-[13px] font-bold text-slate-800">
             <span>{t('entry.rate')}</span>
             <input
               ref={rateRef}
               type="number"
-              className="input h-6 w-12 xl:w-13 px-1.5 py-0 font-mono text-xs font-extrabold text-slate-900"
+              className="input h-6 w-12 xl:w-13 px-1.5 py-0 font-mono text-[13px] font-extrabold text-slate-900"
               value={p.rate}
               onChange={(e) => p.onRateChange(Number(e.target.value) || 0)}
               onKeyDown={(e) => {
@@ -315,7 +315,7 @@ export default function EntryPanel(p: Props) {
         </div>
 
         <span
-          className={`text-xs font-extrabold tracking-tight ${
+          className={`text-[13.5px] font-extrabold tracking-tight ${
             p.side === 'bet' ? 'text-indigo-700' : 'text-amber-700'
           }`}
         >
@@ -330,7 +330,7 @@ export default function EntryPanel(p: Props) {
             codeRef.current = el;
             if (p.codeInputRef) p.codeInputRef.current = el;
           }}
-          className="input-yellow h-7 xl:h-8 min-w-0 flex-1 px-2 font-mono text-sm uppercase"
+          className="input-yellow h-7 xl:h-8 min-w-0 flex-1 px-2 font-mono text-[14px] uppercase"
           placeholder={t('entry.codePlaceholder')}
           value={code}
           onChange={(e) => {
@@ -342,7 +342,7 @@ export default function EntryPanel(p: Props) {
         />
         <input
           ref={amountRef}
-          className="input-yellow h-7 xl:h-8 w-20 xl:w-24 px-2 font-mono text-sm tabular-nums"
+          className="input-yellow h-7 xl:h-8 w-22 xl:w-25 px-2 font-mono text-[14px] tabular-nums"
           placeholder={t('entry.amountPlaceholder')}
           inputMode="numeric"
           value={amount}
@@ -356,19 +356,20 @@ export default function EntryPanel(p: Props) {
         <button
           type="button"
           onClick={() => submit(code, amount)}
-          className={`btn btn-sm h-7 xl:h-8 min-h-0 px-2.5 xl:px-3 text-xs font-bold whitespace-nowrap ${accentBtn}`}
+          className={`btn btn-sm h-7 xl:h-8 min-h-0 gap-1 px-2.5 xl:px-3 text-[13.5px] font-bold whitespace-nowrap ${accentBtn}`}
         >
-          {t('entry.add')}
+          <Icon8 name="plus" size={12} />
+          <span>{t('entry.add')}</span>
         </button>
       </div>
-      {invalid && <p className="shrink-0 px-2.5 pb-1 text-xs font-semibold text-rose-600">{t('entry.invalid')}</p>}
+      {invalid && <p className="shrink-0 px-2.5 pb-1 text-[13px] font-semibold text-rose-600">{t('entry.invalid')}</p>}
 
       {/* Active Entry Grid: # / No / Amount */}
       <div className="min-h-[60px] flex-1 overflow-y-auto border-t border-slate-200/90 bg-white">
-        <table className="w-full text-xs">
+        <table className="w-full text-[13.5px]">
           <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50/95 backdrop-blur-xs">
-            <tr className="text-left text-xs font-extrabold text-slate-700">
-              <th className="w-8 px-2.5 py-1 font-mono">{t('entry.colNum')}</th>
+            <tr className="text-left text-[13px] font-extrabold text-slate-800">
+              <th className="w-9 px-2.5 py-1 font-mono">{t('entry.colNum')}</th>
               <th className="px-2 py-1">{t('entry.colNo')}</th>
               <th className="px-2.5 py-1 text-right">{t('entry.colAmount')}</th>
               <th className="w-7" />
@@ -386,12 +387,12 @@ export default function EntryPanel(p: Props) {
                   selectedId === r.id ? 'bg-indigo-50 font-semibold' : 'hover:bg-slate-50/80'
                 }`}
               >
-                <td className="px-2.5 py-1 font-mono text-xs text-slate-400">{i + 1}</td>
+                <td className="px-2.5 py-1 font-mono text-[13px] text-slate-500">{i + 1}</td>
                 {editId === r.id ? (
                   <>
                     <td className="px-1.5 py-1">
                       <input
-                        className="input-yellow h-7 w-full px-1.5 font-mono text-xs uppercase"
+                        className="input-yellow h-7 w-full px-1.5 font-mono text-[13.5px] uppercase"
                         value={editCode}
                         autoFocus
                         onChange={(e) => setEditCode(e.target.value)}
@@ -415,7 +416,7 @@ export default function EntryPanel(p: Props) {
                     <td className="px-1.5 py-1 text-right">
                       <input
                         data-edit-amt
-                        className="input-yellow h-7 w-20 px-1.5 text-right font-mono text-xs"
+                        className="input-yellow h-7 w-20 px-1.5 text-right font-mono text-[13.5px]"
                         value={editAmt}
                         inputMode="numeric"
                         onChange={(e) => setEditAmt(e.target.value)}
@@ -446,10 +447,10 @@ export default function EntryPanel(p: Props) {
                   </>
                 ) : (
                   <>
-                    <td className="px-2 py-1 font-mono font-bold text-slate-900">
+                    <td className="px-2 py-1 font-mono text-[13.5px] font-bold text-slate-900">
                       {formatDisplayCode(r.displayCode)}
                     </td>
-                    <td className="px-2.5 py-1 text-right font-mono font-semibold tabular-nums text-slate-800">
+                    <td className="px-2.5 py-1 text-right font-mono text-[13.5px] font-bold tabular-nums text-slate-900">
                       {fmt(r.rowTotal)}
                     </td>
                     <td className="py-1 pr-1.5 text-right">
@@ -471,7 +472,7 @@ export default function EntryPanel(p: Props) {
             ))}
             {shownRows.length === 0 && (
               <tr>
-                <td colSpan={4} className="py-8 text-center text-xs text-slate-400">
+                <td colSpan={4} className="px-3 py-8 text-center text-[13.5px] font-medium text-slate-500">
                   {t('entry.empty')}
                 </td>
               </tr>
@@ -483,8 +484,8 @@ export default function EntryPanel(p: Props) {
       {/* Footer Total & Save Bar */}
       <div className="mt-auto shrink-0 border-t border-slate-200/90 bg-slate-50/80 px-2.5 py-1 xl:py-1.5">
         <div className="mb-1 flex items-baseline justify-between px-0.5">
-          <span className="text-xs font-bold text-slate-700">{t('entry.total')}</span>
-          <span className="font-mono text-sm font-black tabular-nums text-slate-900">
+          <span className="text-[13.5px] font-bold text-slate-800">{t('entry.total')}</span>
+          <span className="font-mono text-[15px] font-black tabular-nums text-slate-900">
             {fmt(total)}
           </span>
         </div>
@@ -492,16 +493,18 @@ export default function EntryPanel(p: Props) {
           <button
             type="button"
             onClick={p.onSave}
-            className={`btn btn-sm h-7 xl:h-8 min-h-0 flex-1 text-xs font-bold ${accentBtn}`}
+            className={`btn btn-sm h-7 xl:h-8 min-h-0 flex-1 gap-1.5 text-[13.5px] font-bold ${accentBtn}`}
           >
-            {p.side === 'bet' ? t('entry.saveBet') : t('entry.saveCarry')}
+            <Icon8 name="save" size={14} />
+            <span>{p.side === 'bet' ? t('entry.saveBet') : t('entry.saveCarry')}</span>
           </button>
           <button
             type="button"
             onClick={p.onClear}
-            className="btn btn-outline btn-sm h-7 xl:h-8 min-h-0 px-3 text-xs font-semibold"
+            className="btn btn-outline btn-sm h-7 xl:h-8 min-h-0 gap-1 px-3 text-[13.5px] font-bold"
           >
-            {t('entry.clear')}
+            <Icon8 name="clear" size={12} />
+            <span>{t('entry.clear')}</span>
           </button>
         </div>
       </div>

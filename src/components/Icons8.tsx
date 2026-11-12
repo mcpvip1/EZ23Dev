@@ -39,7 +39,8 @@ export type Icon8Name =
   | 'palette'
   | 'database'
   | 'globe'
-  | 'mobile';
+  | 'mobile'
+  | 'crop';
 
 export interface Icon8Props {
   name: Icon8Name;
@@ -48,362 +49,434 @@ export interface Icon8Props {
 }
 
 /**
- * Icons8 Flat Color Vector Icon System (Standalone / Zero Attribution).
- * Renders multi-tone layered flat vector icons matching the Icons8 Flat / Fluency aesthetic.
+ * Icons8 "Pulsar" (`pulsar-color`) Vector Icon System.
+ * Features the signature Icons8 Pulsar aesthetic:
+ *  1. Offset pastel/vibrant color fill layer shifted down-right (+3px, +3px)
+ *  2. Crisp #18193F dark-navy rounded line-art strokes (strokeWidth=3) with Pulsar gap details
  */
 export function Icon8({ name, size = 16, className = '' }: Icon8Props): React.ReactElement {
   const s = size;
   const baseClass = `inline-block shrink-0 select-none align-middle ${className}`;
+  const INK = '#18193F';
 
   switch (name) {
     case 'inbox':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <path d="M9 10C7.343 10 6 11.343 6 13V37C6 39.761 8.239 42 11 42H37C39.761 42 42 39.761 42 37V13C42 11.343 40.657 10 39 10H9Z" fill="#5C6BC0" />
-          <path d="M6 28H16L19 33H29L32 28H42V37C42 39.761 39.761 42 37 42H11C8.239 42 6 39.761 6 37V28Z" fill="#3949AB" />
-          <path d="M24 6V24M24 24L17 17M24 24L31 17" stroke="#FFCA28" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
+          {/* Pulsar offset fill */}
+          <rect x="11" y="13" width="32" height="30" rx="5" fill="#8CE7F2" />
+          <path d="M9 29H17L20 34H28L31 29H39V37C39 39.2 37.2 41 35 41H13C10.8 41 9 39.2 9 37V29Z" fill="#5C9CE6" />
+          {/* Pulsar line art */}
+          <path d="M15 9H35C37.2 9 39 10.8 39 13V36C39 38.8 36.8 41 34 41H14C11.2 41 9 38.8 9 36V15" stroke={INK} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M9 28H16.5L19.5 33H28.5L31.5 28H39" stroke={INK} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M24 6V23M24 23L18 17M24 23L30 17" stroke={INK} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       );
 
     case 'lightning':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <path d="M27 4L10 26H23L19 44L38 20H25L27 4Z" fill="#FFC107" />
-          <path d="M27 4L19 26H25L19 44L38 20H25L27 4Z" fill="#FFA000" fillOpacity="0.45" />
+          {/* Pulsar offset fill */}
+          <path d="M29 8L14 28H26L22 44L39 22H27L29 8Z" fill="#FFE082" />
+          <path d="M29 8L21 28H27L22 44L39 22H27L29 8Z" fill="#FFB74D" />
+          {/* Pulsar line art */}
+          <path d="M26 5L11 25H23L19 43L36 19H24L26 5Z" stroke={INK} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       );
 
     case 'idea':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <circle cx="24" cy="20" r="14" fill="#FFD54F" />
-          <path d="M18 31H30L28 38H20L18 31Z" fill="#FFF176" />
-          <rect x="19" y="37" width="10" height="5" rx="2" fill="#78909C" />
-          <path d="M22 42H26C26 43.657 25.105 45 24 45C22.895 45 22 43.657 22 42Z" fill="#455A64" />
-          <path d="M24 11C19.582 11 16 14.582 16 19" stroke="#FFF9C4" strokeWidth="3" strokeLinecap="round" />
+          {/* Pulsar offset fill */}
+          <circle cx="27" cy="22" r="13" fill="#FFE082" />
+          <rect x="20" y="36" width="11" height="6" rx="2" fill="#90CAF9" />
+          {/* Pulsar line art */}
+          <path d="M18 31C14.4 28.6 12 24.6 12 20C12 12.8 17.4 7 24 7C30.6 7 36 12.8 36 20C36 24.6 33.6 28.6 30 31L28.5 36H19.5L18 31Z" stroke={INK} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M19 36H29V40C29 41.7 27.7 43 26 43H22C20.3 43 19 41.7 19 40V36Z" stroke={INK} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M24 13C20.7 13 18 15.7 18 19" stroke={INK} strokeWidth="2.8" strokeLinecap="round" />
         </svg>
       );
 
     case 'close':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <circle cx="24" cy="24" r="20" fill="#EF5350" fillOpacity="0.16" />
-          <path d="M16 16L32 32M32 16L16 32" stroke="currentColor" strokeWidth="4.5" strokeLinecap="round" />
+          {/* Pulsar offset fill */}
+          <circle cx="26" cy="26" r="17" fill="#FFAB91" />
+          {/* Pulsar line art */}
+          <circle cx="23" cy="23" r="17" stroke={INK} strokeWidth="3.2" strokeLinecap="round" strokeDasharray="88 14" />
+          <path d="M16.5 16.5L29.5 29.5M29.5 16.5L16.5 29.5" stroke={INK} strokeWidth="3.5" strokeLinecap="round" />
         </svg>
       );
 
     case 'checkmark':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <circle cx="24" cy="24" r="20" fill="#4CAF50" />
-          <path d="M14 24.5L21 31.5L35 17.5" stroke="#FFFFFF" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
+          {/* Pulsar offset fill */}
+          <circle cx="26" cy="26" r="17" fill="#A5D6A7" />
+          {/* Pulsar line art */}
+          <circle cx="23" cy="23" r="17" stroke={INK} strokeWidth="3.2" strokeLinecap="round" strokeDasharray="88 14" />
+          <path d="M15.5 23.5L21 29L31.5 17.5" stroke={INK} strokeWidth="3.6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       );
 
     case 'chevron-down':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <path d="M12 18L24 30L36 18" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M14 21L26 33L38 21" stroke="#8CE7F2" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M11 18L23 30L35 18" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       );
 
     case 'clipboard':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <rect x="9" y="8" width="30" height="36" rx="4" fill="#90CAF9" />
-          <rect x="13" y="12" width="22" height="28" rx="2" fill="#FFFFFF" />
-          <path d="M18 6H30C31.657 6 33 7.343 33 9V12H15V9C15 7.343 16.343 6 18 6Z" fill="#546E7A" />
-          <rect x="17" y="19" width="14" height="3" rx="1.5" fill="#42A5F5" />
-          <rect x="17" y="25" width="14" height="3" rx="1.5" fill="#42A5F5" />
-          <rect x="17" y="31" width="9" height="3" rx="1.5" fill="#42A5F5" />
+          {/* Pulsar offset fill */}
+          <rect x="13" y="12" width="27" height="32" rx="4" fill="#8CE7F2" />
+          <rect x="19" y="7" width="14" height="7" rx="2.5" fill="#FFE082" />
+          {/* Pulsar line art */}
+          <path d="M17 10H13C10.8 10 9 11.8 9 14V39C9 41.2 10.8 43 13 43H33C35.2 43 37 41.2 37 39V14C37 11.8 35.2 10 33 10H29" stroke={INK} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+          <rect x="17" y="6" width="12" height="7" rx="2.5" stroke={INK} strokeWidth="3.2" />
+          <path d="M16 21H30M16 28H30M16 35H24" stroke={INK} strokeWidth="3" strokeLinecap="round" />
         </svg>
       );
 
     case 'print':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <rect x="12" y="6" width="24" height="12" rx="2" fill="#90CAF9" />
-          <rect x="6" y="16" width="36" height="18" rx="4" fill="#546E7A" />
-          <rect x="12" y="28" width="24" height="14" rx="2" fill="#E3F2FD" />
-          <circle cx="35" cy="22" r="2.5" fill="#4CAF50" />
-          <rect x="16" y="33" width="16" height="2.5" rx="1.25" fill="#1E88E5" />
-          <rect x="16" y="37" width="11" height="2.5" rx="1.25" fill="#1E88E5" />
+          {/* Pulsar offset fill */}
+          <rect x="10" y="18" width="32" height="17" rx="4" fill="#90CAF9" />
+          <rect x="15" y="30" width="22" height="13" rx="2" fill="#8CE7F2" />
+          {/* Pulsar line art */}
+          <path d="M13 16V8C13 6.9 13.9 6 15 6H31C32.1 6 33 6.9 33 8V16" stroke={INK} strokeWidth="3.2" strokeLinecap="round" />
+          <path d="M13 33H9C7.3 33 6 31.7 6 30V20C6 17.8 7.8 16 10 16H36C38.2 16 40 17.8 40 20V30C40 31.7 38.7 33 37 33H33" stroke={INK} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+          <rect x="13" y="27" width="20" height="15" rx="2" fill="#FFFFFF" stroke={INK} strokeWidth="3.2" />
+          <path d="M17 33H29M17 37H25" stroke={INK} strokeWidth="2.8" strokeLinecap="round" />
+          <circle cx="34" cy="21" r="2" fill={INK} />
         </svg>
       );
 
     case 'document':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <path d="M10 8C10 5.791 11.791 4 14 4H29L38 13V40C38 42.209 36.209 44 34 44H14C11.791 44 10 42.209 10 40V8Z" fill="#42A5F5" />
-          <path d="M29 4L38 13H31C29.895 13 29 12.105 29 11V4Z" fill="#BBDEFB" />
-          <rect x="16" y="20" width="16" height="3" rx="1.5" fill="#FFFFFF" />
-          <rect x="16" y="26" width="16" height="3" rx="1.5" fill="#FFFFFF" />
-          <rect x="16" y="32" width="10" height="3" rx="1.5" fill="#FFFFFF" />
+          {/* Pulsar offset fill */}
+          <path d="M14 9H31L40 18V41C40 43.2 38.2 45 36 45H14C11.8 45 10 43.2 10 41V13C10 10.8 11.8 9 14 9Z" fill="#8CE7F2" />
+          {/* Pulsar line art */}
+          <path d="M11 6H28L37 15V39C37 41.2 35.2 43 33 43H11C8.8 43 7 41.2 7 39V10C7 7.8 8.8 6 11 6Z" stroke={INK} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M27 6V14C27 15.1 27.9 16 29 16H37" stroke={INK} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M14 23H29M14 30H29M14 37H22" stroke={INK} strokeWidth="3" strokeLinecap="round" />
         </svg>
       );
 
     case 'share':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <path d="M14 24L34 12M14 24L34 36" stroke="#26A69A" strokeWidth="4" strokeLinecap="round" />
-          <circle cx="12" cy="24" r="7" fill="#00897B" />
-          <circle cx="35" cy="12" r="7" fill="#26A69A" />
-          <circle cx="35" cy="36" r="7" fill="#4DB6AC" />
+          <circle cx="15" cy="26" r="6.5" fill="#8CE7F2" />
+          <circle cx="37" cy="14" r="6.5" fill="#A5D6A7" />
+          <circle cx="37" cy="38" r="6.5" fill="#FFE082" />
+          <path d="M18 21L30 14M18 27L30 34" stroke={INK} strokeWidth="3.2" strokeLinecap="round" />
+          <circle cx="13" cy="24" r="6" stroke={INK} strokeWidth="3.2" />
+          <circle cx="35" cy="12" r="6" stroke={INK} strokeWidth="3.2" />
+          <circle cx="35" cy="36" r="6" stroke={INK} strokeWidth="3.2" />
         </svg>
       );
 
     case 'whatsapp':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <path d="M24 4C12.954 4 4 12.732 4 23.5C4 27.39 5.17 31.015 7.185 34.065L4.5 43.5L14.33 40.92C17.22 42.56 20.51 43.5 24 43.5C35.046 43.5 44 34.768 44 24C44 13.232 35.046 4 24 4Z" fill="#25D366" />
-          <path d="M17.5 14.5C16.8 14.5 15.5 15.2 15.5 17.5C15.5 21.2 18.8 25.9 22.2 28.6C25.6 31.3 30 32.5 32 32C34 31.5 34.5 29.5 34.5 28.8C34.5 28.1 34.1 27.8 33.4 27.4L29.5 25.6C28.9 25.3 28.4 25.5 28 26.1L26.8 27.6C26.4 28 25.9 28.1 25.3 27.8C23.5 26.9 21.1 24.9 19.9 22.8C19.6 22.3 19.8 21.8 20.2 21.4L21.3 20.1C21.7 19.6 21.8 19.1 21.5 18.5L19.8 14.9C19.4 14.5 18.2 14.5 17.5 14.5Z" fill="#FFFFFF" />
+          <circle cx="26" cy="26" r="18" fill="#A5D6A7" />
+          <path d="M23 6C13.1 6 5 13.9 5 23.6C5 27.2 6.1 30.5 8 33.3L5.5 42L14.5 39.6C17.1 41.1 20 42 23 42C32.9 42 41 34.1 41 24.4C41 14.7 32.9 6 23 6Z" stroke={INK} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M17.5 16.5C16.8 16.5 15.8 17.2 15.8 19C15.8 22.3 18.7 26.5 21.8 28.9C24.9 31.3 28.8 32.3 30.5 31.8C32.2 31.3 32.8 29.6 32.8 29L29.2 27.2L27.2 29C25.2 28.1 22.2 25.6 21 23.3L22.5 21.5L20.8 17.5C20.4 16.8 18.2 16.5 17.5 16.5Z" fill="#25D366" stroke={INK} strokeWidth="2.6" strokeLinejoin="round" />
         </svg>
       );
 
     case 'telegram':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <circle cx="24" cy="24" r="20" fill="#29B6F6" />
-          <path d="M35.5 14.5L11.5 23.8C10.5 24.2 10.5 25.1 11.4 25.4L17.5 27.3L31.8 18.3C32.5 17.9 33.1 18.1 32.6 18.6L21 29.1L20.6 35.2C21.2 35.2 21.5 34.9 21.9 34.5L25 31.5L31.3 36.1C32.4 36.7 33.2 36.4 33.5 35.1L37.2 16.2C37.5 14.8 36.6 14 35.5 14.5Z" fill="#FFFFFF" />
+          <circle cx="26" cy="26" r="18" fill="#8CE7F2" />
+          <path d="M39 11L7 23.5L18.5 28L34 16L22.5 30.5L22 40L27.5 34L35 39.5L39 11Z" fill="#8CE7F2" stroke={INK} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       );
 
     case 'search':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <path d="M31 31L42 42" stroke="#546E7A" strokeWidth="5" strokeLinecap="round" />
-          <circle cx="21" cy="21" r="14" fill="#81D4FA" stroke="#1E88E5" strokeWidth="3.5" />
-          <path d="M15 16C16.5 14 18.6 13 21 13" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" />
+          <circle cx="24" cy="24" r="13" fill="#8CE7F2" />
+          <circle cx="21" cy="21" r="13" stroke={INK} strokeWidth="3.2" />
+          <path d="M16 16C17.4 14.5 19.2 13.7 21 13.7" stroke={INK} strokeWidth="2.8" strokeLinecap="round" />
+          <path d="M30.5 30.5L41 41" stroke={INK} strokeWidth="3.8" strokeLinecap="round" />
         </svg>
       );
 
     case 'trash':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <path d="M12 14H36L34 40C33.9 41.7 32.5 43 30.8 43H17.2C15.5 43 14.1 41.7 14 40L12 14Z" fill="#EF5350" />
-          <path d="M19 7H29C30.1 7 31 7.9 31 9V11H17V9C17 7.9 17.9 7 19 7Z" fill="#B71C1C" />
-          <rect x="8" y="10" width="32" height="4" rx="2" fill="#E53935" />
-          <path d="M20 20V36M28 20V36" stroke="#FFCDD2" strokeWidth="3" strokeLinecap="round" />
+          {/* Pulsar offset fill */}
+          <path d="M15 16H37L35 41C34.9 42.7 33.5 44 31.8 44H20.2C18.5 44 17.1 42.7 17 41L15 16Z" fill="#FFAB91" />
+          {/* Pulsar line art */}
+          <path d="M9 12H39" stroke={INK} strokeWidth="3.2" strokeLinecap="round" />
+          <path d="M18 12V8.5C18 7.1 19.1 6 20.5 6H27.5C28.9 6 30 7.1 30 8.5V12" stroke={INK} strokeWidth="3.2" strokeLinecap="round" />
+          <path d="M12 12L14 39.5C14.1 41.5 15.8 43 17.8 43H30.2C32.2 43 33.9 41.5 34 39.5L36 12" stroke={INK} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M20 20V35M28 20V35" stroke={INK} strokeWidth="3" strokeLinecap="round" />
         </svg>
       );
 
     case 'edit':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <path d="M33.5 7.5L40.5 14.5L16 39L8 40L9 32L33.5 7.5Z" fill="#FFB74D" />
-          <path d="M33.5 7.5L40.5 14.5L36.5 18.5L29.5 11.5L33.5 7.5Z" fill="#EF5350" />
-          <path d="M9 32L16 39L8 40L9 32Z" fill="#37474F" />
+          {/* Pulsar offset fill */}
+          <path d="M34 10L41 17L18 40L9 42L11 33L34 10Z" fill="#FFE082" />
+          <path d="M31 11L38 18L34 22L27 15L31 11Z" fill="#FFAB91" />
+          {/* Pulsar line art */}
+          <path d="M32.5 7.5L40.5 15.5L16 40L7 42L9 33L32.5 7.5Z" stroke={INK} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M28 12L36 20" stroke={INK} strokeWidth="3" strokeLinecap="round" />
         </svg>
       );
 
     case 'users':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <circle cx="31" cy="16" r="6" fill="#90CAF9" />
-          <path d="M22 36C22 30.5 26 27 31 27C36 27 40 30.5 40 36V38H22V36Z" fill="#64B5F6" />
-          <circle cx="19" cy="17" r="7" fill="#5C6BC0" />
-          <path d="M8 38C8 31.9 12.9 28 19 28C25.1 28 30 31.9 30 38V40H8V38Z" fill="#3F51B5" />
+          {/* Pulsar offset fill */}
+          <circle cx="21" cy="18" r="7" fill="#8CE7F2" />
+          <path d="M9 40C9 33.5 14.5 29 21 29C27.5 29 33 33.5 33 40H9Z" fill="#90CAF9" />
+          <circle cx="33" cy="17" r="5.5" fill="#FFE082" />
+          {/* Pulsar line art */}
+          <circle cx="19" cy="16" r="6.5" stroke={INK} strokeWidth="3.2" />
+          <path d="M7 39C7 32.9 12.4 28.5 19 28.5C25.6 28.5 31 32.9 31 39" stroke={INK} strokeWidth="3.2" strokeLinecap="round" />
+          <path d="M30 11.5C32.8 11.5 35 13.7 35 16.5C35 19.3 32.8 21.5 30 21.5" stroke={INK} strokeWidth="3" strokeLinecap="round" />
+          <path d="M33 29C37.5 29.8 41 33.2 41 38" stroke={INK} strokeWidth="3" strokeLinecap="round" />
         </svg>
       );
 
     case 'warning':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <path d="M24 6L44 41H4L24 6Z" fill="#FFB300" />
-          <rect x="22" y="18" width="4" height="12" rx="2" fill="#263238" />
-          <circle cx="24" cy="35" r="2.5" fill="#263238" />
+          <path d="M26 9L45 42H7L26 9Z" fill="#FFE082" />
+          <path d="M24 6L43 40H5L24 6Z" stroke={INK} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M24 18V28" stroke={INK} strokeWidth="3.5" strokeLinecap="round" />
+          <circle cx="24" cy="34" r="2.2" fill={INK} />
         </svg>
       );
 
     case 'help':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <circle cx="24" cy="24" r="20" fill="#5C6BC0" />
-          <path d="M18.5 18.5C18.5 15.5 21 13.5 24.2 13.5C27.4 13.5 29.8 15.5 29.8 18.4C29.8 20.6 28.4 22 26.5 23.1C24.9 24 24 25 24 26.8V28" stroke="#FFFFFF" strokeWidth="4" strokeLinecap="round" />
-          <circle cx="24" cy="34.5" r="2.5" fill="#FFFFFF" />
+          <circle cx="26" cy="26" r="17" fill="#B39DDB" />
+          <circle cx="23" cy="23" r="17" stroke={INK} strokeWidth="3.2" strokeDasharray="88 14" strokeLinecap="round" />
+          <path d="M18.5 18.5C18.5 15.8 20.6 14 23.3 14C26 14 28 15.8 28 18.2C28 20.2 26.7 21.4 25 22.4C23.7 23.2 23 24.2 23 25.8V26.8" stroke={INK} strokeWidth="3.2" strokeLinecap="round" />
+          <circle cx="23" cy="32.5" r="2.2" fill={INK} />
         </svg>
       );
 
     case 'forward':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <path d="M18 11L31 24L18 37" stroke="#4F46E5" strokeWidth="5.5" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="26" cy="26" r="16" fill="#8CE7F2" />
+          <path d="M19 12L31 24L19 36" stroke={INK} strokeWidth="4.2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       );
 
     case 'forward-all':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <path d="M11 11L24 24L11 37" stroke="#6366F1" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M24 11L37 24L24 37" stroke="#4338CA" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="26" cy="26" r="16" fill="#90CAF9" />
+          <path d="M12 12L24 24L12 36" stroke={INK} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M24 12L36 24L24 36" stroke={INK} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       );
 
     case 'forward-tens':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <path d="M7 12L18 24L7 36" stroke="#818CF8" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M19 12L30 24L19 36" stroke="#6366F1" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M31 12L42 24L31 36" stroke="#4338CA" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
+          <rect x="8" y="10" width="34" height="30" rx="8" fill="#B39DDB" />
+          <path d="M8 13L18 24L8 35" stroke={INK} strokeWidth="3.8" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M19 13L29 24L19 35" stroke={INK} strokeWidth="3.8" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M30 13L40 24L30 35" stroke={INK} strokeWidth="3.8" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       );
 
     case 'back':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <path d="M30 11L17 24L30 37" stroke="#D97706" strokeWidth="5.5" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="26" cy="26" r="16" fill="#FFE082" />
+          <path d="M29 12L17 24L29 36" stroke={INK} strokeWidth="4.2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       );
 
     case 'back-all':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <path d="M37 11L24 24L37 37" stroke="#F59E0B" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M24 11L11 24L24 37" stroke="#B45309" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="26" cy="26" r="16" fill="#FFAB91" />
+          <path d="M36 12L24 24L36 36" stroke={INK} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M24 12L12 24L24 36" stroke={INK} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       );
 
     case 'sort':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <path d="M16 10V38M16 10L9 17M16 10L23 17" stroke="#5C6BC0" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M32 38V10M32 38L25 31M32 38L39 31" stroke="#26A69A" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="25" cy="25" r="16" fill="#8CE7F2" />
+          <path d="M16 10V38M16 10L10 16M16 10L22 16" stroke={INK} strokeWidth="3.6" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M32 38V10M32 38L26 32M32 38L38 32" stroke={INK} strokeWidth="3.6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       );
 
     case 'browse':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <rect x="6" y="8" width="36" height="32" rx="4" fill="#E8EAF6" />
-          <rect x="6" y="8" width="36" height="9" rx="4" fill="#5C6BC0" />
-          <rect x="12" y="22" width="24" height="3" rx="1.5" fill="#7986CB" />
-          <rect x="12" y="29" width="18" height="3" rx="1.5" fill="#7986CB" />
+          <rect x="9" y="11" width="34" height="30" rx="4" fill="#8CE7F2" />
+          <rect x="6" y="8" width="34" height="30" rx="4" stroke={INK} strokeWidth="3.2" />
+          <path d="M6 16H40" stroke={INK} strokeWidth="3.2" />
+          <path d="M13 23H33M13 30H25" stroke={INK} strokeWidth="3" strokeLinecap="round" />
         </svg>
       );
 
     case 'save':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <path d="M9 9C9 7.343 10.343 6 12 6H32L42 16V39C42 40.657 40.657 42 39 42H12C10.343 42 9 40.657 9 39V9Z" fill="#FFFFFF" fillOpacity="0.22" />
-          <circle cx="24" cy="26" r="10" fill="#FFFFFF" />
-          <path d="M19.5 26L22.8 29.3L29.5 22.5" stroke="#1E293B" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+          <rect x="11" y="10" width="30" height="31" rx="4" fill="#8CE7F2" />
+          <path d="M9 11C9 8.8 10.8 7 13 7H31L39 15V37C39 39.2 37.2 41 35 41H13C10.8 41 9 39.2 9 37V11Z" fill="#FFFFFF" fillOpacity="0.88" stroke={INK} strokeWidth="3.2" strokeLinejoin="round" />
+          <circle cx="24" cy="26" r="8" fill="#A5D6A7" stroke={INK} strokeWidth="2.8" />
+          <path d="M20.5 26L23 28.5L28 23.5" stroke={INK} strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       );
 
     case 'clear':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <path d="M14 14L34 34M34 14L14 34" stroke="#64748B" strokeWidth="4.5" strokeLinecap="round" />
+          <circle cx="26" cy="26" r="15" fill="#FFAB91" />
+          <path d="M15 15L33 33M33 15L15 33" stroke={INK} strokeWidth="3.8" strokeLinecap="round" />
         </svg>
       );
 
     case 'clock':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <circle cx="24" cy="24" r="19" fill="#FFCA28" />
-          <circle cx="24" cy="24" r="15" fill="#1E293B" />
-          <path d="M24 14V24L31 28" stroke="#FFCA28" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="26" cy="26" r="17" fill="#FFE082" />
+          <circle cx="23" cy="23" r="17" fill="#FFF8E1" stroke={INK} strokeWidth="3.2" />
+          <path d="M23 13V23L30 27" stroke={INK} strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       );
 
     case 'refresh':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <path d="M38 18C35.5 11.6 29.3 7 22 7C12.6 7 5 14.6 5 24C5 33.4 12.6 41 22 41C29.9 41 36.5 35.6 38.4 28.3" stroke="#5C6BC0" strokeWidth="4.5" strokeLinecap="round" />
-          <path d="M40 8V19H29" stroke="#26A69A" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="26" cy="26" r="15" fill="#8CE7F2" />
+          <path d="M37 18C34.5 12 28.7 8 22 8C13.2 8 6 15.2 6 24C6 32.8 13.2 40 22 40C29.4 40 35.6 35 37.4 28.2" stroke={INK} strokeWidth="3.6" strokeLinecap="round" />
+          <path d="M39 8V19H28" stroke={INK} strokeWidth="3.6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       );
 
     case 'device':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <rect x="6" y="9" width="36" height="25" rx="3" fill="#42A5F5" />
-          <rect x="9" y="12" width="30" height="19" rx="1.5" fill="#E3F2FD" />
-          <path d="M2 36H46L42 40H6L2 36Z" fill="#546E7A" />
-          <circle cx="24" cy="21.5" r="5.5" fill="#26A69A" />
-          <path d="M21.5 21.5L23.3 23.3L27 19.6" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+          <rect x="9" y="11" width="33" height="23" rx="3" fill="#8CE7F2" />
+          <rect x="6" y="8" width="33" height="23" rx="3" stroke={INK} strokeWidth="3.2" />
+          <path d="M3 35H42L38.5 39.5H6.5L3 35Z" fill="#FFE082" stroke={INK} strokeWidth="3" strokeLinejoin="round" />
+          <path d="M19 19.5L22 22.5L27.5 17" stroke={INK} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       );
 
     case 'plus':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <path d="M24 10V38M10 24H38" stroke="currentColor" strokeWidth="5.5" strokeLinecap="round" />
+          <circle cx="26" cy="26" r="16" fill="#A5D6A7" />
+          <circle cx="23" cy="23" r="16" fill="#FFFFFF" fillOpacity="0.9" stroke={INK} strokeWidth="3.2" />
+          <path d="M23 14V32M14 23H32" stroke={INK} strokeWidth="3.8" strokeLinecap="round" />
         </svg>
       );
 
     case 'settings':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <circle cx="24" cy="24" r="16" fill="#78909C" />
-          <circle cx="24" cy="24" r="7" fill="#ECEFF1" />
+          <circle cx="26" cy="26" r="14" fill="#8CE7F2" />
+          <circle cx="23" cy="23" r="12" fill="#E0F7FA" stroke={INK} strokeWidth="3.2" />
+          <circle cx="23" cy="23" r="5" fill="#FFE082" stroke={INK} strokeWidth="3" />
+          <path d="M23 7V11M23 35V39M7 23H11M35 23H39M11.7 11.7L14.5 14.5M31.5 31.5L34.3 34.3M34.3 11.7L31.5 14.5M14.5 31.5L11.7 34.3" stroke={INK} strokeWidth="3.2" strokeLinecap="round" />
         </svg>
       );
 
     case 'report':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <rect x="8" y="24" width="8" height="18" rx="2" fill="#42A5F5" />
-          <rect x="20" y="14" width="8" height="28" rx="2" fill="#5C6BC0" />
-          <rect x="32" y="6" width="8" height="36" rx="2" fill="#26A69A" />
+          <rect x="10" y="25" width="8" height="17" rx="2" fill="#8CE7F2" />
+          <rect x="22" y="16" width="8" height="26" rx="2" fill="#FFE082" />
+          <rect x="34" y="9" width="8" height="33" rx="2" fill="#A5D6A7" />
+          <rect x="8" y="23" width="8" height="17" rx="2" stroke={INK} strokeWidth="3" />
+          <rect x="20" y="14" width="8" height="26" rx="2" stroke={INK} strokeWidth="3" />
+          <rect x="32" y="7" width="8" height="33" rx="2" stroke={INK} strokeWidth="3" />
         </svg>
       );
 
     case 'trophy':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <path d="M14 8H34V21C34 26.5 29.5 31 24 31C18.5 31 14 26.5 14 21V8Z" fill="#FFCA28" />
-          <rect x="21" y="30" width="6" height="8" fill="#FFA000" />
-          <rect x="15" y="37" width="18" height="5" rx="2" fill="#546E7A" />
+          <path d="M16 10H36V21C36 26.5 31.5 31 26 31C20.5 31 16 26.5 16 21V10Z" fill="#FFE082" />
+          <path d="M14 8H34V19C34 24.5 29.5 29 24 29C18.5 29 14 24.5 14 19V8Z" stroke={INK} strokeWidth="3.2" strokeLinejoin="round" />
+          <path d="M14 12H8V17C8 20.3 10.7 23 14 23M34 12H40V17C40 20.3 37.3 23 34 23" stroke={INK} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M24 29V37M16 38H32" stroke={INK} strokeWidth="3.2" strokeLinecap="round" />
         </svg>
       );
 
     case 'calendar':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <rect x="6" y="10" width="36" height="32" rx="4" fill="#ECEFF1" />
-          <path d="M6 14C6 11.8 7.8 10 10 10H38C40.2 10 42 11.8 42 14V19H6V14Z" fill="#EF5350" />
-          <circle cx="16" cy="27" r="2.5" fill="#5C6BC0" />
-          <circle cx="24" cy="27" r="2.5" fill="#5C6BC0" />
-          <circle cx="32" cy="27" r="2.5" fill="#5C6BC0" />
+          <rect x="10" y="13" width="32" height="29" rx="4" fill="#8CE7F2" />
+          <rect x="7" y="10" width="32" height="29" rx="4" fill="#FFFFFF" stroke={INK} strokeWidth="3.2" />
+          <path d="M7 18H39" stroke={INK} strokeWidth="3.2" />
+          <path d="M15 6V12M31 6V12" stroke={INK} strokeWidth="3.2" strokeLinecap="round" />
+          <circle cx="16" cy="26" r="2.2" fill="#FFAB91" stroke={INK} strokeWidth="1.5" />
+          <circle cx="23" cy="26" r="2.2" fill="#FFE082" stroke={INK} strokeWidth="1.5" />
+          <circle cx="30" cy="26" r="2.2" fill="#A5D6A7" stroke={INK} strokeWidth="1.5" />
         </svg>
       );
 
     case 'palette':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <path d="M24 6C13.5 6 5 14 5 24C5 34 13.5 42 23 42C26.3 42 28 39.8 28 37.3C28 36 27.3 35 26.6 34C26 33.1 25.5 32.1 25.5 31C25.5 28.8 27.3 27 29.8 27H34C39.5 27 43 23.2 43 18C43 11.2 34.5 6 24 6Z" fill="#FFCA28" />
-          <circle cx="15" cy="20" r="3" fill="#EF5350" />
-          <circle cx="22" cy="14" r="3" fill="#42A5F5" />
-          <circle cx="31" cy="15" r="3" fill="#66BB6A" />
+          <path d="M26 9C15.5 9 7 16.8 7 26.5C7 36.2 15.5 43 24.5 43C27.8 43 29.5 40.8 29.5 38.5C29.5 36.2 27.5 35 27.5 32.8C27.5 30.6 29.3 28.8 31.8 28.8H35.5C40.5 28.8 44 25 44 20C44 13.5 36 9 26 9Z" fill="#FFE082" />
+          <path d="M23 6C13 6 5 13.8 5 23.5C5 33.2 13 40 22 40C25.3 40 27 37.8 27 35.5C27 33.2 25 32 25 29.8C25 27.6 26.8 25.8 29.3 25.8H33C38 25.8 41.5 22 41.5 17C41.5 10.5 33.5 6 23 6Z" stroke={INK} strokeWidth="3.2" strokeLinejoin="round" />
+          <circle cx="14" cy="19" r="2.6" fill="#FFAB91" stroke={INK} strokeWidth="2" />
+          <circle cx="21" cy="13" r="2.6" fill="#8CE7F2" stroke={INK} strokeWidth="2" />
+          <circle cx="30" cy="14" r="2.6" fill="#A5D6A7" stroke={INK} strokeWidth="2" />
         </svg>
       );
 
     case 'database':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <ellipse cx="24" cy="12" rx="16" ry="6" fill="#42A5F5" />
-          <path d="M8 12V24C8 27.3 15.2 30 24 30C32.8 30 40 27.3 40 24V12" fill="#1E88E5" />
-          <path d="M8 24V36C8 39.3 15.2 42 24 42C32.8 42 40 39.3 40 36V24" fill="#1565C0" />
-          <ellipse cx="24" cy="12" rx="16" ry="6" fill="#64B5F6" />
+          <path d="M11 15V37C11 40.3 17.7 43 26 43C34.3 43 41 40.3 41 37V15" fill="#8CE7F2" />
+          <ellipse cx="23" cy="12" rx="15" ry="5.5" fill="#FFE082" stroke={INK} strokeWidth="3.2" />
+          <path d="M8 12V24C8 27 14.7 29.5 23 29.5C31.3 29.5 38 27 38 24V12" stroke={INK} strokeWidth="3.2" />
+          <path d="M8 24V36C8 39 14.7 41.5 23 41.5C31.3 41.5 38 39 38 36V24" stroke={INK} strokeWidth="3.2" />
         </svg>
       );
 
     case 'globe':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <circle cx="24" cy="24" r="18" fill="#29B6F6" />
-          <ellipse cx="24" cy="24" rx="9" ry="18" stroke="#E1F5FE" strokeWidth="2.5" />
-          <path d="M6 24H42" stroke="#E1F5FE" strokeWidth="2.5" />
+          <circle cx="26" cy="26" r="16" fill="#8CE7F2" />
+          <circle cx="23" cy="23" r="16" fill="#E0F7FA" stroke={INK} strokeWidth="3.2" />
+          <ellipse cx="23" cy="23" rx="8" ry="16" stroke={INK} strokeWidth="2.8" />
+          <path d="M7 23H39" stroke={INK} strokeWidth="2.8" />
         </svg>
       );
 
     case 'mobile':
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
-          <rect x="12" y="4" width="24" height="40" rx="4" fill="#546E7A" />
-          <rect x="15" y="8" width="18" height="29" rx="1.5" fill="#81D4FA" />
-          <circle cx="24" cy="40.5" r="2" fill="#ECEFF1" />
+          <rect x="15" y="7" width="22" height="37" rx="4" fill="#8CE7F2" />
+          <rect x="12" y="5" width="22" height="37" rx="4" stroke={INK} strokeWidth="3.2" />
+          <path d="M19 10H27" stroke={INK} strokeWidth="2.8" strokeLinecap="round" />
+          <circle cx="23" cy="36.5" r="2" fill={INK} />
+        </svg>
+      );
+
+    case 'crop':
+      return (
+        <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
+          <rect x="15" y="15" width="21" height="21" rx="2" fill="#FFAB91" />
+          <path d="M13 6V33C13 34.7 14.3 36 16 36H42" stroke={INK} strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M6 13H32C33.7 13 35 14.3 35 16V42" stroke={INK} strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       );
   }
