@@ -131,7 +131,7 @@ export default function App() {
   const [fighterRows, setFighterRows] = useState<EntryRow[]>([]);
   const [carryRows, setCarryRows] = useState<EntryRow[]>([]);
   const [lastClipboard, setLastClipboard] = useState('');
-  const [toast, setToast] = useState<{ msg: string; kind: 'ok' | 'err' | 'info' } | null>(null);
+  const [toast, setToast] = useState<{ id: number; msg: string; kind: 'ok' | 'err' | 'info' } | null>(null);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [pendingSave, setPendingSave] = useState<'bet' | 'carry' | null>(null);
   const [reportNav, setReportNav] = useState<{
@@ -205,9 +205,18 @@ export default function App() {
   }, []);
 
   const { t, setLang } = useLang();
+  const toastTimerRef = useRef<number | null>(null);
+  const toastSeqRef = useRef(0);
   const showToast = (msg: string, kind: 'ok' | 'err' | 'info' = 'ok') => {
-    setToast({ msg, kind });
-    setTimeout(() => setToast(null), kind === 'err' ? 5000 : 3500);
+    if (toastTimerRef.current !== null) {
+      window.clearTimeout(toastTimerRef.current);
+    }
+    toastSeqRef.current += 1;
+    setToast({ id: toastSeqRef.current, msg, kind });
+    toastTimerRef.current = window.setTimeout(() => {
+      setToast(null);
+      toastTimerRef.current = null;
+    }, kind === 'err' ? 5000 : 3500);
   };
 
   const hasInitialFocusedRef = useRef(false);
@@ -1494,13 +1503,16 @@ export default function App() {
       )}
 
       {toast && (
-        <div
-          role="status"
-          className={`no-print fixed bottom-4 left-1/2 z-20 -translate-x-1/2 rounded-full px-5 py-3 text-sm font-bold text-white shadow-lg ${
-            toast.kind === 'err' ? 'bg-red-600' : toast.kind === 'info' ? 'bg-slate-900' : 'bg-emerald-700'
-          }`}
-        >
-          {toast.msg}
+        <div className="no-print pointer-events-none fixed bottom-4 left-1/2 z-50 -translate-x-1/2">
+          <div
+            key={toast.id}
+            role="status"
+            className={`toast-slide-in pointer-events-auto rounded-full px-5 py-3 text-sm font-bold text-white shadow-lg ${
+              toast.kind === 'err' ? 'bg-red-600' : toast.kind === 'info' ? 'bg-slate-900' : 'bg-emerald-700'
+            }`}
+          >
+            {toast.msg}
+          </div>
         </div>
       )}
 

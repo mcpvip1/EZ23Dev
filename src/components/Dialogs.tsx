@@ -701,7 +701,6 @@ export function AboutDialog(p: {
           <pre className="rounded-lg border border-slate-200 bg-slate-50 p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap text-slate-700">
             {t('dialog.about.cheat')}
           </pre>
-          <p className="mt-2 text-xs text-slate-500">{t('dialog.about.note')}</p>
         </div>
       </div>
     </Modal>
