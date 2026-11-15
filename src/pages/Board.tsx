@@ -178,11 +178,11 @@ export default function Board(p: BoardProps) {
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-1.5">
+    <div className="flex min-h-0 flex-1 flex-col gap-1">
       {/* ---- 00–99 Live Exposure Matrix (with Risk Heatmap) ---- */}
       <section className="card shrink-0 overflow-hidden border-slate-300 shadow-xs">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] sm:min-w-full table-fixed border-collapse text-[13.5px]">
+          <table className="w-full min-w-[560px] sm:min-w-full table-fixed border-collapse">
             <tbody>
               {Array.from({ length: 10 }, (_, r) => (
                 <tr key={r} className="even:bg-slate-50/75">
@@ -196,7 +196,7 @@ export default function Board(p: BoardProps) {
                         key={j}
                         data-risk-tier={heat.tier}
                         title={v !== 0 ? `${pad2str(n)}: ${fmt(v)}${pct > 0 ? ` (${pct}%)` : ''}` : undefined}
-                        className="border-r border-b border-slate-300/90 last:border-r-0 px-1.5 sm:px-2.5 py-[3px] 2xl:py-1.5 transition-colors hover:bg-indigo-50/80"
+                        className="border-r border-b border-slate-300/90 last:border-r-0 px-1.5 sm:px-2 py-[2px] transition-colors hover:bg-indigo-50/80"
                         style={
                           heat.backgroundColor || heat.boxShadow
                             ? {
@@ -206,11 +206,11 @@ export default function Board(p: BoardProps) {
                             : undefined
                         }
                       >
-                        <span className="flex items-baseline justify-between gap-1 leading-tight">
-                          <span className={`font-mono text-[13px] tracking-tight ${heat.noClassName}`}>
+                        <span className="flex items-baseline justify-between gap-1 leading-none">
+                          <span className={`font-mono board-cell-idx tracking-tight ${heat.noClassName}`}>
                             {pad2str(n)}
                           </span>
-                          <span className={`font-mono text-[13.5px] tabular-nums tracking-tight ${heat.valClassName}`}>
+                          <span className={`font-mono board-cell-val tabular-nums tracking-tight ${heat.valClassName}`}>
                             {v === 0 ? '0' : fmt(v)}
                           </span>
                         </span>
@@ -224,7 +224,7 @@ export default function Board(p: BoardProps) {
                 {colTotals.map((tot, j) => (
                   <td
                     key={j}
-                    className="border-r border-slate-800 last:border-r-0 px-1.5 sm:px-2.5 py-1 2xl:py-1.5 text-right font-mono text-[13.5px] font-black tabular-nums"
+                    className="border-r border-slate-800 last:border-r-0 px-1.5 sm:px-2 py-[3px] text-right font-mono board-cell-val font-black tabular-nums"
                   >
                     {fmt(tot)}
                   </td>
@@ -303,7 +303,7 @@ export default function Board(p: BoardProps) {
           </div>
 
           {/* Over-Limit List (ကန့်သတ်ချက် ကျော်သော နံပါတ်) — Tall, High-Contrast & Prominent */}
-          <div className="flex min-h-[72px] flex-1 flex-col overflow-y-auto bg-white">
+          <div className="flex min-h-[44px] flex-1 flex-col overflow-y-auto bg-white">
             <table className="w-full text-[13px]">
               <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-100/95 text-[12.5px] font-extrabold text-slate-800">
                 <tr>
@@ -322,8 +322,8 @@ export default function Board(p: BoardProps) {
                         : 'text-slate-900 hover:bg-rose-50/50'
                     }`}
                   >
-                    <td className="px-2.5 py-1 font-mono text-[13.5px] font-extrabold text-slate-900">{r.no}</td>
-                    <td className="px-2.5 py-1 text-right font-mono text-[13.5px] font-black tabular-nums text-rose-600">
+                    <td className="px-2.5 py-[2px] font-mono text-[13.5px] font-extrabold text-slate-900">{r.no}</td>
+                    <td className="px-2.5 py-[2px] text-right font-mono text-[13.5px] font-black tabular-nums text-rose-600">
                       {r.overHidden}
                     </td>
                   </tr>
@@ -331,8 +331,8 @@ export default function Board(p: BoardProps) {
               </tbody>
             </table>
             {overShown.length === 0 && (
-              <div className="flex flex-1 flex-col items-center justify-center px-2 py-2 text-center">
-                <span className="rounded-lg border border-slate-200/90 bg-slate-50/90 px-2.5 py-1.5 text-[13px] font-bold text-slate-700 shadow-2xs">
+              <div className="flex flex-1 flex-col items-center justify-center px-2 py-1.5 text-center">
+                <span className="rounded-lg border border-slate-200/90 bg-slate-50/90 px-2.5 py-1 text-[13px] font-bold text-slate-700 shadow-2xs">
                   {t('board.overEmpty')}
                 </span>
               </div>
@@ -357,13 +357,13 @@ export default function Board(p: BoardProps) {
           </div>
 
           {/* Compact 5-Row Transfer & Limit Control Pad */}
-          <div className="mt-auto flex shrink-0 flex-col gap-[3px] 2xl:gap-1 bg-slate-50/70 p-1 2xl:p-1.5">
+          <div className="mt-auto flex shrink-0 flex-col gap-[2px] bg-slate-50/70 p-1">
             {/* Row 1: Forward Transfers (To Carry / ပို့ငွေ) */}
             <div className="grid grid-cols-2 gap-1">
               <button
                 type="button"
                 onClick={passSelected}
-                className="btn btn-outline h-[26px] 2xl:h-7 min-h-0 w-full justify-between border-indigo-200/90 bg-white px-2 text-[13px] font-bold whitespace-nowrap text-indigo-950 transition-all hover:border-indigo-400 hover:bg-indigo-50/70 active:scale-95"
+                className="btn btn-outline h-[25px] min-h-0 w-full justify-between border-indigo-200/90 bg-white px-2 text-[13px] font-bold whitespace-nowrap text-indigo-950 transition-all hover:border-indigo-400 hover:bg-indigo-50/70 active:scale-95"
                 title={t('board.passSelectedTitle')}
               >
                 <span>{t('board.passSelected')}</span>
@@ -375,7 +375,7 @@ export default function Board(p: BoardProps) {
                   p.onPassAll();
                   setSelectedOver(new Set());
                 }}
-                className="btn btn-outline h-[26px] 2xl:h-7 min-h-0 w-full justify-between border-indigo-200/90 bg-indigo-50/60 px-2 text-[13px] font-bold whitespace-nowrap text-indigo-950 transition-all hover:border-indigo-400 hover:bg-indigo-100/80 active:scale-95"
+                className="btn btn-outline h-[25px] min-h-0 w-full justify-between border-indigo-200/90 bg-indigo-50/60 px-2 text-[13px] font-bold whitespace-nowrap text-indigo-950 transition-all hover:border-indigo-400 hover:bg-indigo-100/80 active:scale-95"
                 title={t('board.passAllTitle')}
               >
                 <span>{t('board.passAll')}</span>
@@ -388,7 +388,7 @@ export default function Board(p: BoardProps) {
               <button
                 type="button"
                 onClick={p.onBackOne}
-                className="btn btn-outline h-[26px] 2xl:h-7 min-h-0 w-full justify-between border-amber-200/90 bg-white px-2 text-[13px] font-bold whitespace-nowrap text-amber-950 transition-all hover:border-amber-400 hover:bg-amber-50/70 active:scale-95"
+                className="btn btn-outline h-[25px] min-h-0 w-full justify-between border-amber-200/90 bg-white px-2 text-[13px] font-bold whitespace-nowrap text-amber-950 transition-all hover:border-amber-400 hover:bg-amber-50/70 active:scale-95"
                 title={t('board.backOneTitle')}
               >
                 <Icon8 name="back" size={12} />
@@ -397,7 +397,7 @@ export default function Board(p: BoardProps) {
               <button
                 type="button"
                 onClick={p.onBack}
-                className="btn btn-outline h-[26px] 2xl:h-7 min-h-0 w-full justify-between border-amber-200/90 bg-amber-50/60 px-2 text-[13px] font-bold whitespace-nowrap text-amber-950 transition-all hover:border-amber-400 hover:bg-amber-100/80 active:scale-95"
+                className="btn btn-outline h-[25px] min-h-0 w-full justify-between border-amber-200/90 bg-amber-50/60 px-2 text-[13px] font-bold whitespace-nowrap text-amber-950 transition-all hover:border-amber-400 hover:bg-amber-100/80 active:scale-95"
                 title={t('board.backAllTitle')}
               >
                 <Icon8 name="back-all" size={13} />
@@ -410,7 +410,7 @@ export default function Board(p: BoardProps) {
               <button
                 type="button"
                 onClick={passTens}
-                className="btn btn-outline h-[26px] 2xl:h-7 min-h-0 w-full justify-between border-slate-300 bg-white px-1.5 text-[12.5px] font-bold whitespace-nowrap text-slate-900 transition-all hover:border-indigo-300 hover:bg-indigo-50/50 active:scale-95"
+                className="btn btn-outline h-[25px] min-h-0 w-full justify-between border-slate-300 bg-white px-1.5 text-[12.5px] font-bold whitespace-nowrap text-slate-900 transition-all hover:border-indigo-300 hover:bg-indigo-50/50 active:scale-95"
                 title={t('board.passTensTitle')}
               >
                 <span>{t('board.passTens')}</span>
@@ -420,7 +420,7 @@ export default function Board(p: BoardProps) {
                 type="button"
                 onClick={() => p.onBTbuy?.()}
                 disabled={!p.onBTbuy}
-                className="btn btn-outline btn-sm h-[26px] 2xl:h-7 min-h-0 w-full justify-center gap-1 border-slate-300 bg-white px-1.5 text-[12.5px] font-bold whitespace-nowrap text-slate-800 transition-all hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-800 active:scale-95"
+                className="btn btn-outline btn-sm h-[25px] min-h-0 w-full justify-center gap-1 border-slate-300 bg-white px-1.5 text-[12.5px] font-bold whitespace-nowrap text-slate-800 transition-all hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-800 active:scale-95"
                 title={t('board.btbuyTitle')}
               >
                 <Icon8 name="plus" size={11} />
@@ -430,7 +430,7 @@ export default function Board(p: BoardProps) {
                 type="button"
                 onClick={() => p.onCrop?.()}
                 disabled={!p.onCrop}
-                className="btn btn-outline btn-sm h-[26px] 2xl:h-7 min-h-0 w-full justify-center gap-1 border-slate-300 bg-white px-1.5 text-[12.5px] font-bold whitespace-nowrap text-slate-800 transition-all hover:border-rose-400 hover:bg-rose-50 hover:text-rose-800 active:scale-95"
+                className="btn btn-outline btn-sm h-[25px] min-h-0 w-full justify-center gap-1 border-slate-300 bg-white px-1.5 text-[12.5px] font-bold whitespace-nowrap text-slate-800 transition-all hover:border-rose-400 hover:bg-rose-50 hover:text-rose-800 active:scale-95"
                 title={t('board.cropTitle')}
               >
                 <Icon8 name="crop" size={11} />
@@ -447,7 +447,7 @@ export default function Board(p: BoardProps) {
 
             {/* Row 5: Replay Old Numbers + Unit Sales Side-by-Side */}
             <div className="grid grid-cols-2 gap-1">
-              <div className="flex h-[26px] 2xl:h-7 w-full overflow-hidden rounded-lg border border-slate-300 bg-white shadow-2xs focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/15">
+              <div className="flex h-[25px] w-full overflow-hidden rounded-lg border border-slate-300 bg-white shadow-2xs focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/15">
                 <button
                   type="button"
                   onClick={() => p.onOldNumbers(oldAmt)}
@@ -468,7 +468,7 @@ export default function Board(p: BoardProps) {
               <button
                 type="button"
                 onClick={p.onUnitSales}
-                className="btn btn-outline btn-sm h-[26px] 2xl:h-7 min-h-0 w-full justify-center gap-1 border-slate-300 bg-white px-1.5 text-[12.5px] font-bold whitespace-nowrap text-slate-800 hover:bg-slate-100 hover:text-slate-950"
+                className="btn btn-outline btn-sm h-[25px] min-h-0 w-full justify-center gap-1 border-slate-300 bg-white px-1.5 text-[12.5px] font-bold whitespace-nowrap text-slate-800 hover:bg-slate-100 hover:text-slate-950"
               >
                 <Icon8 name="report" size={11} />
                 <span>{t('board.unitSales')}</span>

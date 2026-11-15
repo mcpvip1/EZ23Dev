@@ -22,6 +22,7 @@ export interface MenuAction {
     | 'highlight'
     | 'backup'
     | 'deviceStatus'
+    | 'copyDeviceId'
     | 'browseBets'
     | 'reportCurrent'
     | 'reportDaily'
@@ -58,7 +59,7 @@ export default function MenuBar(p: {
 }) {
   const { t, lang } = useLang();
   const [open, setOpen] = useState<string | null>(null);
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLElement>(null);
 
   const SETUP: Item[] = [
     { key: 'menu.setup.lucky', shortcut: 'Ctrl+L', action: 'lucky', icon: 'trophy' },
@@ -168,44 +169,33 @@ export default function MenuBar(p: {
     );
   };
 
-  const isFresh = p.deviceProfile?.lastBootMode === 'FRESH_START';
-
   return (
-    <header ref={ref} className="no-print sticky top-0 z-30 shrink-0 border-b border-slate-800 bg-slate-900 text-slate-100 shadow-sm">
-      <div className="flex w-full max-w-7xl mx-auto flex-wrap items-center gap-1.5 px-2.5 py-1">
+    <header
+      ref={ref}
+      className="no-print sticky top-0 z-30 shrink-0 border-b border-slate-800/80 bg-slate-900 text-slate-100 shadow-md"
+    >
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-1.5 px-2.5 py-2 sm:px-3">
         {/* Brand Identity */}
-        <div className="mr-1.5 flex items-center gap-2 select-none">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-700 font-mono text-xs font-black text-white shadow-xs">
+        <div className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-xs font-black tracking-tight text-white shadow-sm">
             2D
           </div>
-          <span className="font-mono text-sm font-extrabold tracking-tight text-white whitespace-nowrap">
+          <span className="text-[14.5px] font-black tracking-tight text-white whitespace-nowrap">
             EASY 2D
           </span>
         </div>
 
-        <div className="mx-1 h-4 w-px bg-slate-700/80" />
+        <div className="hidden h-5 w-px bg-slate-700/80 sm:block" />
 
-        {/* Left Zone: Active Date, Session Switcher & Device Status */}
+        {/* Left Zone: Active Date, Session Toggle & Device ID */}
         <div className="flex items-center gap-2">
-          <span className="text-[13.5px] font-bold text-slate-200 whitespace-nowrap">
+          <span
+            className="hidden text-xs font-semibold text-slate-400 xl:inline whitespace-nowrap"
+            title={p.dateLabel}
+          >
             {lang === 'my' ? 'လက်ရှိရက်စွဲ:' : 'Current Date:'}
           </span>
           {p.right}
-          {p.deviceProfile && (
-            <button
-              type="button"
-              onClick={() => run('deviceStatus')}
-              title={`${t('device.title')} — ${p.deviceProfile.deviceId}`}
-              className={`inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 font-mono text-[12px] font-bold transition-colors whitespace-nowrap ${
-                isFresh
-                  ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25'
-                  : 'border-slate-700 bg-slate-800/90 text-slate-300 hover:border-slate-600 hover:text-white'
-              }`}
-            >
-              <Icon8 name="device" size={14} />
-              <span>{isFresh ? 'Fresh Start' : p.deviceProfile.deviceId.slice(0, 8)}</span>
-            </button>
-          )}
         </div>
 
         {/* Primary Dropdown Menus & Language Selector (Right-Aligned) */}

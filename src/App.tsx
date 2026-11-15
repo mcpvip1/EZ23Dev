@@ -175,8 +175,8 @@ export default function App() {
       width: w,
       height: h,
       mode,
-      // Lock to 100dvh zero-scroll fit-all on Desktops, Laptops, Landscape Tablets (w >= 900, h >= 620), and Portrait 8"–12" Tablets (w >= 740, h >= 950)
-      lockScreenHeight: (w >= 900 && h >= 620) || (w >= 740 && h >= 950),
+      // Lock to 100dvh zero-scroll fit-all on Desktops, Laptops, Landscape Tablets (w >= 900, h >= 580), and Portrait 8"–12" Tablets (w >= 740, h >= 950)
+      lockScreenHeight: (w >= 900 && h >= 580) || (w >= 740 && h >= 950),
     };
   });
 
@@ -189,7 +189,7 @@ export default function App() {
         width: w,
         height: h,
         mode,
-        lockScreenHeight: (w >= 900 && h >= 620) || (w >= 740 && h >= 950),
+        lockScreenHeight: (w >= 900 && h >= 580) || (w >= 740 && h >= 950),
       });
       document.documentElement.dataset.deviceForm = mode;
     };
@@ -1043,6 +1043,11 @@ export default function App() {
       case 'deviceStatus':
         setDialog('deviceStatus');
         break;
+      case 'copyDeviceId':
+        if (data?.deviceProfile?.deviceId && (await copyText(data.deviceProfile.deviceId))) {
+          showToast(t('toast.deviceIdCopied'));
+        }
+        break;
       case 'browseBets':
         setPopup({ kind: 'browse' });
         break;
@@ -1266,7 +1271,7 @@ export default function App() {
       />
 
       <main
-        className={`flex w-full max-w-7xl mx-auto flex-1 flex-col px-1.5 sm:px-2 py-1.5 ${
+        className={`flex w-full max-w-7xl mx-auto flex-1 flex-col px-1.5 sm:px-2 py-1 ${
           viewport.lockScreenHeight ? 'min-h-0 overflow-hidden' : ''
         }`}
       >

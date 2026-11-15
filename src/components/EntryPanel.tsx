@@ -214,7 +214,7 @@ export default function EntryPanel(p: Props) {
     <section className="card flex h-full min-h-0 flex-1 flex-col overflow-hidden border-slate-300">
       {/* Top Person Selection & Actions Bar */}
       <div
-        className={`flex shrink-0 items-center gap-1 xl:gap-1.5 border-b px-1.5 xl:px-2 py-1 xl:py-1.5 ${
+        className={`flex shrink-0 items-center gap-1 xl:gap-1.5 border-b px-1.5 xl:px-2 py-1 ${
           isIndigo
             ? 'border-indigo-100 bg-gradient-to-r from-indigo-50/70 via-slate-50 to-white'
             : 'border-amber-100 bg-gradient-to-r from-amber-50/70 via-slate-50 to-white'
@@ -355,13 +355,13 @@ export default function EntryPanel(p: Props) {
       </div>
 
       {/* Code + Amount Operator Command Bar */}
-      <div className="flex shrink-0 items-center gap-1.5 bg-white px-2 py-1 xl:py-1.5">
+      <div className="flex shrink-0 items-center gap-1.5 bg-white px-2 py-1">
         <input
           ref={(el) => {
             codeRef.current = el;
             if (p.codeInputRef) p.codeInputRef.current = el;
           }}
-          className="input-yellow h-7 xl:h-8 min-w-0 flex-1 px-2 font-mono text-[14px] uppercase"
+          className="input-yellow h-7 min-w-0 flex-1 px-2 font-mono text-[14px] uppercase"
           placeholder={t('entry.codePlaceholder')}
           inputMode="numeric"
           value={code}
@@ -376,7 +376,7 @@ export default function EntryPanel(p: Props) {
         />
         <input
           ref={amountRef}
-          className="input-yellow h-7 xl:h-8 w-22 xl:w-25 px-2 font-mono text-[14px] tabular-nums"
+          className="input-yellow h-7 w-22 xl:w-25 px-2 font-mono text-[14px] tabular-nums"
           placeholder={t('entry.amountPlaceholder')}
           inputMode="numeric"
           value={amount}
@@ -391,7 +391,7 @@ export default function EntryPanel(p: Props) {
         <button
           type="button"
           onClick={() => submit(code, amount)}
-          className={`btn btn-sm h-7 xl:h-8 min-h-0 gap-1 px-2.5 xl:px-3 text-[13.5px] font-bold whitespace-nowrap ${accentBtn}`}
+          className={`btn btn-sm h-7 min-h-0 gap-1 px-2.5 xl:px-3 text-[13.5px] font-bold whitespace-nowrap ${accentBtn}`}
         >
           <Icon8 name="plus" size={12} />
           <span>{t('entry.add')}</span>
@@ -451,13 +451,13 @@ export default function EntryPanel(p: Props) {
       {invalid && <p className="shrink-0 px-2.5 pb-1 text-[13px] font-semibold text-rose-600">{t('entry.invalid')}</p>}
 
       {/* Active Entry Grid: # / No / Amount */}
-      <div className="min-h-[60px] flex-1 overflow-y-auto border-t border-slate-200/90 bg-white">
+      <div className="min-h-[48px] flex-1 overflow-y-auto border-t border-slate-200/90 bg-white">
         <table className="w-full text-[13.5px]">
           <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50/95 backdrop-blur-xs">
             <tr className="text-left text-[13px] font-extrabold text-slate-800">
-              <th className="w-9 px-2.5 py-1 font-mono">{t('entry.colNum')}</th>
-              <th className="px-2 py-1">{t('entry.colNo')}</th>
-              <th className="px-2.5 py-1 text-right">{t('entry.colAmount')}</th>
+              <th className="w-9 px-2.5 py-[3px] font-mono">{t('entry.colNum')}</th>
+              <th className="px-2 py-[3px]">{t('entry.colNo')}</th>
+              <th className="px-2.5 py-[3px] text-right">{t('entry.colAmount')}</th>
               <th className="w-7" />
             </tr>
           </thead>
@@ -562,7 +562,7 @@ export default function EntryPanel(p: Props) {
             ))}
             {shownRows.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-3 py-8 text-center text-[13.5px] font-medium text-slate-500">
+                <td colSpan={4} className="px-3 py-2.5 text-center text-[13.5px] font-medium text-slate-500">
                   {t('entry.empty')}
                 </td>
               </tr>
@@ -572,7 +572,7 @@ export default function EntryPanel(p: Props) {
       </div>
 
       {/* Footer Total & Save Bar */}
-      <div className="mt-auto shrink-0 border-t border-slate-200/90 bg-slate-50/80 px-2.5 py-1 xl:py-1.5">
+      <div className="mt-auto shrink-0 border-t border-slate-200/90 bg-slate-50/80 px-2.5 py-1">
         <div className="mb-1 flex items-baseline justify-between px-0.5">
           <span className="text-[13.5px] font-bold text-slate-800">{t('entry.total')}</span>
           <span className="font-mono text-[15px] font-black tabular-nums text-slate-900">
@@ -583,7 +583,7 @@ export default function EntryPanel(p: Props) {
           <button
             type="button"
             onClick={p.onSave}
-            className={`btn btn-sm h-7 xl:h-8 min-h-0 flex-1 gap-1.5 text-[13.5px] font-bold ${accentBtn}`}
+            className={`btn btn-sm h-7 min-h-0 flex-1 gap-1.5 text-[13.5px] font-bold ${accentBtn}`}
           >
             <Icon8 name="save" size={14} />
             <span>{p.side === 'bet' ? t('entry.saveBet') : t('entry.saveCarry')}</span>
@@ -591,7 +591,7 @@ export default function EntryPanel(p: Props) {
           <button
             type="button"
             onClick={p.onClear}
-            className="btn btn-outline btn-sm h-7 xl:h-8 min-h-0 gap-1 px-3 text-[13.5px] font-bold"
+            className="btn btn-outline btn-sm h-7 min-h-0 gap-1 px-3 text-[13.5px] font-bold"
           >
             <Icon8 name="clear" size={12} />
             <span>{t('entry.clear')}</span>

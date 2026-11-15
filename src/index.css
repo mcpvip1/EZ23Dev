@@ -90,6 +90,20 @@
   line-height: 1.48 !important;
 }
 
+.board-cell-idx {
+  font-size: 0.78125rem;
+  line-height: 1.12;
+}
+
+.board-cell-val {
+  font-size: 0.8125rem;
+  line-height: 1.12;
+}
+
+.status-cell-tight {
+  line-height: 1.22 !important;
+}
+
 /*
  * Modern Financial Terminal Design System (EASY 2D Pro)
  */

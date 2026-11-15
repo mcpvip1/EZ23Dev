@@ -86,8 +86,8 @@ export default function StatusPanel(p: {
                   <td
                     className={
                       r.highlight
-                        ? `px-2 py-0.5 2xl:py-1.5 text-[13px] 2xl:text-[13.5px] font-extrabold leading-tight whitespace-nowrap ${tint}`
-                        : `px-2 py-0.5 2xl:py-1 text-[13px] 2xl:text-[13.5px] font-bold leading-tight whitespace-nowrap text-slate-800 ${r.isLimit ? 'bg-slate-50/70 font-extrabold text-slate-900' : 'bg-slate-50/40'}`
+                        ? `px-2 py-[2px] 2xl:py-1 status-cell-tight text-[13px] font-extrabold whitespace-nowrap ${tint}`
+                        : `px-2 py-[2px] 2xl:py-1 status-cell-tight text-[13px] font-bold whitespace-nowrap text-slate-800 ${r.isLimit ? 'bg-slate-50/70 font-extrabold text-slate-900' : 'bg-slate-50/40'}`
                     }
                   >
                     {r.label}
@@ -95,8 +95,8 @@ export default function StatusPanel(p: {
                   <td
                     className={
                       r.highlight
-                        ? `px-2 py-0.5 2xl:py-1.5 text-right font-mono text-[13.5px] 2xl:text-[14.5px] font-black tabular-nums whitespace-nowrap ${tint}`
-                        : `px-2 py-0.5 2xl:py-1 text-right font-mono text-[13px] 2xl:text-[13.5px] font-extrabold tabular-nums whitespace-nowrap text-slate-900 ${r.isLimit ? 'bg-slate-50/70' : ''} ${r.red ? 'text-rose-600' : ''}`
+                        ? `px-2 py-[2px] 2xl:py-1 status-cell-tight text-right font-mono text-[13.5px] font-black tabular-nums whitespace-nowrap ${tint}`
+                        : `px-2 py-[2px] 2xl:py-1 status-cell-tight text-right font-mono text-[13px] font-extrabold tabular-nums whitespace-nowrap text-slate-900 ${r.isLimit ? 'bg-slate-50/70' : ''} ${r.red ? 'text-rose-600' : ''}`
                     }
                   >
                     {r.node ?? r.value}
@@ -108,7 +108,7 @@ export default function StatusPanel(p: {
         </table>
       </section>
 
-      <section className="card mt-auto shrink-0 border-slate-300 bg-gradient-to-b from-white to-slate-50/60 p-1.5">
+      <section className="card mt-auto shrink-0 border-slate-300 bg-gradient-to-b from-white to-slate-50/60 p-1">
         <div className="flex justify-between px-1 font-mono text-[10px] font-extrabold text-slate-700">
           {top.map((l, i) => (
             <span key={l} className={p.autoLetter === l ? 'text-rose-600 font-black' : ''}>
@@ -116,11 +116,11 @@ export default function StatusPanel(p: {
             </span>
           ))}
         </div>
-        <div className="my-1 grid grid-cols-5 gap-1">
+        <div className="my-0.5 grid grid-cols-5 gap-1">
           {top.map((l) => (
             <div
               key={l}
-              className={`h-3 rounded-xs border transition-all ${
+              className={`h-2.5 rounded-xs border transition-all ${
                 cyanTop.has(l)
                   ? 'border-teal-400 bg-teal-100/90'
                   : 'border-slate-300 bg-white'
@@ -130,7 +130,7 @@ export default function StatusPanel(p: {
           {bot.map((l) => (
             <div
               key={l}
-              className={`h-3 rounded-xs border transition-all ${
+              className={`h-2.5 rounded-xs border transition-all ${
                 cyanBot.has(l)
                   ? 'border-teal-400 bg-teal-100/90'
                   : 'border-slate-300 bg-white'
