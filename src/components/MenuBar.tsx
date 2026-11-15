@@ -84,7 +84,6 @@ export default function MenuBar(p: {
 
   const SYSTEM: Item[] = [
     { key: 'menu.auto', action: 'auto', icon: 'lightning' },
-    { key: 'menu.template', action: 'template', icon: 'clipboard' },
     { key: 'menu.system.device', action: 'deviceStatus', icon: 'device' },
     { key: 'menu.system.backup', action: 'backup', icon: 'database' },
     { key: 'menu.system.highlight', action: 'highlight', icon: 'palette' },
