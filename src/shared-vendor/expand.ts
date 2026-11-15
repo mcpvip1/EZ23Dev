@@ -575,13 +575,18 @@ export function expandCode(code: string, amountText: string): ExpandResult | nul
  */
 export function expandEntryList(input: string, amountText: string): ExpandResult[] {
   if (typeof input !== 'string' || typeof amountText !== 'string') return [];
-  const raw = input.trim().toLowerCase();
+  const rawInput = input.trim().toLowerCase();
   const amt = amountText.trim();
-  if (raw === '' || !/^[0-9+\-*/.pz aqn ]+$/.test(raw)) return [];
+  if (rawInput === '' || !/^[0-9+\-*/.pz aqn ]+$/.test(rawInput)) return [];
   const parsed = parseAmount(amt);
   if (!parsed) return [];
 
-  const isList = raw.length > 4 && raw.includes(' ');
+  // Normalize single 2-digit code with a trailing dot (e.g. "12.") -> "12"
+  const raw = /^\d{2}\.$/.test(rawInput) ? rawInput.slice(0, 2) : rawInput;
+
+  const isDotList = raw.includes('.');
+  const isSpaceList = raw.length > 4 && raw.includes(' ');
+  const isList = isDotList || isSpaceList;
   if (!isList) {
     const one = expandCode(raw, amt);
     return one ? [one] : [];
@@ -589,8 +594,20 @@ export function expandEntryList(input: string, amountText: string): ExpandResult
 
   const trailingPlus = raw.endsWith('+');
   if (trailingPlus && amt.includes('/')) return [];
-  const core = trailingPlus ? raw.slice(0, -1) : raw;
-  const tokens = core.split(' ').filter((t) => t.length > 0);
+  const core = (trailingPlus ? raw.slice(0, -1) : raw).replace(/\.+$/, '');
+  const tokens = core.split(/[.\s]+/).filter((t) => t.length > 0);
+  if (tokens.length === 0) return [];
+
+  if (isDotList) {
+    const allValid = tokens.every((token) => {
+      const twin = token.length >= 2 && token[0] === token[1];
+      const effective = trailingPlus && !twin ? `${token}+` : token;
+      const amountForToken =
+        parsed.kind === 'split' && twin ? String(parsed.a) : amt;
+      return expandCode(effective, amountForToken) !== null;
+    });
+    if (!allValid) return [];
+  }
 
   return tokens.map((token) => {
     const twin = token.length >= 2 && token[0] === token[1];
@@ -632,3 +649,4 @@ export function expandEntryList(input: string, amountText: string): ExpandResult
     };
   });
 }
+

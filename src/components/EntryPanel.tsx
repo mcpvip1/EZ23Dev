@@ -4,6 +4,12 @@ import { useLang } from '../i18n';
 import type { Person } from '../lib/db';
 import type { EntryRow } from '../lib/types';
 import { fmt } from '../lib/types';
+import {
+  computeLiveEntryPreview,
+  formatContinuousCodeInput,
+  getDynamicKeyBarItems,
+  type DynamicKeyItem,
+} from '../lib/smartEntry';
 import { ConfirmDialog } from './Dialogs';
 import { Icon8 } from './Icons8';
 
@@ -47,6 +53,7 @@ export default function EntryPanel(p: Props) {
   const { t } = useLang();
   const [code, setCode] = useState('');
   const [amount, setAmount] = useState('');
+  const [activeField, setActiveField] = useState<'code' | 'amount'>('code');
   const [invalid, setInvalid] = useState(false);
   const [sortMode, setSortMode] = useState<'entry' | 'code'>('entry');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -68,12 +75,36 @@ export default function EntryPanel(p: Props) {
   }
 
   const focusCode = () => {
+    setActiveField('code');
     codeRef.current?.focus();
     codeRef.current?.select();
   };
   const focusAmount = () => {
+    setActiveField('amount');
     amountRef.current?.focus();
     amountRef.current?.select();
+  };
+
+  const livePreview = useMemo(() => computeLiveEntryPreview(code, amount), [code, amount]);
+  const dynamicKeys = useMemo(
+    () => getDynamicKeyBarItems(code, activeField, amount),
+    [code, activeField, amount],
+  );
+
+  const handleDynamicKeyClick = (item: DynamicKeyItem) => {
+    setInvalid(false);
+    if (item.targetField === 'code') {
+      setCode(item.nextValue);
+    } else {
+      setAmount(item.nextValue);
+    }
+    if (item.moveFocusTo === 'amount') {
+      setActiveField('amount');
+      amountRef.current?.focus();
+    } else {
+      setActiveField('code');
+      codeRef.current?.focus();
+    }
   };
 
   const submit = (codeVal: string, amountVal: string): boolean => {
@@ -140,7 +171,7 @@ export default function EntryPanel(p: Props) {
         setCode(next);
         submit(next, amount);
       }
-    } else if (e.key === saveKey || e.key === '.') {
+    } else if (e.key === saveKey || (e.key === '.' && !code.trim())) {
       e.preventDefault();
       e.stopPropagation();
       setCode('');
@@ -332,9 +363,12 @@ export default function EntryPanel(p: Props) {
           }}
           className="input-yellow h-7 xl:h-8 min-w-0 flex-1 px-2 font-mono text-[14px] uppercase"
           placeholder={t('entry.codePlaceholder')}
+          inputMode="numeric"
           value={code}
+          onFocus={() => setActiveField('code')}
           onChange={(e) => {
-            setCode(e.target.value);
+            const rawVal = e.target.value;
+            setCode((prev) => formatContinuousCodeInput(rawVal, prev));
             setInvalid(false);
           }}
           onKeyDown={onCodeKeyDown}
@@ -346,6 +380,7 @@ export default function EntryPanel(p: Props) {
           placeholder={t('entry.amountPlaceholder')}
           inputMode="numeric"
           value={amount}
+          onFocus={() => setActiveField('amount')}
           onChange={(e) => {
             setAmount(e.target.value);
             setInvalid(false);
@@ -362,6 +397,57 @@ export default function EntryPanel(p: Props) {
           <span>{t('entry.add')}</span>
         </button>
       </div>
+
+      {/* Live Green Preview Bar */}
+      {livePreview && (
+        <div
+          data-testid={`live-preview-${p.side}`}
+          className="flex shrink-0 items-center justify-between gap-1.5 border-t border-emerald-200/80 bg-emerald-50/95 px-2 py-1 text-[12px] font-bold text-emerald-800"
+        >
+          <span className="font-mono font-extrabold text-emerald-700">
+            {livePreview.summaryText}
+          </span>
+        </div>
+      )}
+
+      {/* Context-Aware Dynamic Key Bar (Single Line for Space Saving) */}
+      {dynamicKeys.length > 0 && (
+        <div
+          data-testid={`dynamic-keybar-${p.side}`}
+          onWheel={(e) => {
+            if (e.deltaY !== 0) {
+              e.currentTarget.scrollLeft += e.deltaY;
+            }
+          }}
+          className="flex shrink-0 flex-nowrap items-center gap-1 overflow-x-auto border-t border-slate-200/80 bg-slate-50/90 px-1.5 py-0.5 whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {dynamicKeys.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => handleDynamicKeyClick(item)}
+              className={`inline-flex shrink-0 items-center gap-0.5 rounded border px-1.5 py-0.5 text-[11px] leading-tight font-bold whitespace-nowrap transition-colors ${
+                item.active
+                  ? isIndigo
+                    ? 'border-indigo-500 bg-indigo-600 text-white shadow-2xs'
+                    : 'border-amber-500 bg-amber-600 text-white shadow-2xs'
+                  : 'border-slate-300 bg-white text-slate-800 hover:border-indigo-300 hover:bg-indigo-50/70 hover:text-indigo-800'
+              }`}
+            >
+              <span
+                className={`font-mono font-extrabold ${
+                  item.active ? 'text-white' : isIndigo ? 'text-indigo-700' : 'text-amber-700'
+                }`}
+              >
+                {item.codeToken}
+              </span>
+              {item.label && <span>{item.label}</span>}
+            </button>
+          ))}
+        </div>
+      )}
+
       {invalid && <p className="shrink-0 px-2.5 pb-1 text-[13px] font-semibold text-rose-600">{t('entry.invalid')}</p>}
 
       {/* Active Entry Grid: # / No / Amount */}
@@ -394,8 +480,12 @@ export default function EntryPanel(p: Props) {
                       <input
                         className="input-yellow h-7 w-full px-1.5 font-mono text-[13.5px] uppercase"
                         value={editCode}
+                        inputMode="numeric"
                         autoFocus
-                        onChange={(e) => setEditCode(e.target.value)}
+                        onChange={(e) => {
+                          const rawVal = e.target.value;
+                          setEditCode((prev) => formatContinuousCodeInput(rawVal, prev));
+                        }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault();

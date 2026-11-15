@@ -60,6 +60,13 @@ import {
 } from './components/Dialogs';
 import { UnitSalesDialog } from './components/UnitSalesDialog';
 import { applyFontScaleToDocument, loadFontScale, saveFontScale } from './lib/fontScale';
+import {
+  loadSoundEnabled,
+  playEntryClickSound,
+  playOverLimitAlertSound,
+  saveSoundEnabled,
+  shouldTriggerOverLimitSound,
+} from './lib/soundFeedback';
 
 type Dialog = 'changeDate' | 'delete' | 'unitSales' | 'closeDays' | 'about' | 'highlight' | 'calc' | 'deviceStatus' | null;
 type ReportTab = 'current' | 'daily' | 'weekly' | 'range' | 'selected' | 'uptodate';
@@ -138,6 +145,7 @@ export default function App() {
   // Modern soft rose-coral highlight for over-limit cells (editable via System -> Highlight Color)
   const [highlight, setHighlight] = useState('#fecdd3');
   const [fontScale, setFontScale] = useState<number>(() => loadFontScale());
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => loadSoundEnabled());
   const [showChatIngest, setShowChatIngest] = useState(false);
   const fighterCodeRef = useRef<HTMLInputElement>(null);
   const carryCodeRef = useRef<HTMLInputElement>(null);
@@ -151,6 +159,11 @@ export default function App() {
   const handleFontScaleChange = (nextPct: number) => {
     const saved = saveFontScale(nextPct);
     setFontScale(saved);
+  };
+
+  const handleSoundEnabledChange = (nextEnabled: boolean) => {
+    const saved = saveSoundEnabled(nextEnabled);
+    setSoundEnabled(saved);
   };
 
   // Live Device & Viewport Auto-Fit Detector for Desktop Monitors, Laptops & 8"–12" Tablets (iPad / Galaxy Tab)
@@ -288,6 +301,20 @@ export default function App() {
   }, [savedBet, savedCarry, fighterRows, carryRows]);
 
   const overLimit = useMemo(() => computeOverLimit(board, limit), [board, limit]);
+  const prevOverLimitRef = useRef<{ sessionKey: string; items: OverLimitRow[] } | null>(null);
+
+  useEffect(() => {
+    if (!data) return;
+    const sessionKey = `${betDay}:${session}`;
+    if (!prevOverLimitRef.current || prevOverLimitRef.current.sessionKey !== sessionKey) {
+      prevOverLimitRef.current = { sessionKey, items: overLimit };
+      return;
+    }
+    if (shouldTriggerOverLimitSound(prevOverLimitRef.current.items, overLimit)) {
+      playOverLimitAlertSound(soundEnabled);
+    }
+    prevOverLimitRef.current = { sessionKey, items: overLimit };
+  }, [data, betDay, session, overLimit, soundEnabled]);
 
   const dash = useMemo(() => {
     const allBet = [
@@ -379,6 +406,7 @@ export default function App() {
     const rows = expanded.map((r) => makeEntryRow(r, amount));
     if (side === 'bet') setFighterRows((prev) => [...prev, ...rows]);
     else setCarryRows((prev) => [...prev, ...rows]);
+    playEntryClickSound(soundEnabled);
     return true;
   };
 
@@ -394,6 +422,7 @@ export default function App() {
     };
     if (side === 'bet') setFighterRows(apply);
     else setCarryRows(apply);
+    playEntryClickSound(soundEnabled);
     return true;
   };
 
@@ -1405,6 +1434,8 @@ export default function App() {
           rate={data.settings?.rate ?? 80}
           fontScale={fontScale}
           onFontScaleChange={handleFontScaleChange}
+          soundEnabled={soundEnabled}
+          onSoundEnabledChange={handleSoundEnabledChange}
           onApply={(l, c, r) => void saveCalc(l, c, r)}
           onClose={() => setDialog(null)}
         />
@@ -1414,6 +1445,8 @@ export default function App() {
         <AboutDialog
           fontScale={fontScale}
           onFontScaleChange={handleFontScaleChange}
+          soundEnabled={soundEnabled}
+          onSoundEnabledChange={handleSoundEnabledChange}
           onClose={() => setDialog(null)}
         />
       )}

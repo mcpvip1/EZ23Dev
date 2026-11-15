@@ -269,6 +269,13 @@ export const my: Record<string, string> = {
   'dialog.fontScale.increase': 'စာလုံး ကြီးရန် (+)',
   'dialog.fontScale.previewLabel': 'နမူနာ စာသား:',
   'dialog.fontScale.previewText': 'ကန့်သတ်ချက် 40,000 · ဖိုက်တာ ထိုးငွေ / ဒိုင် ပို့ငွေ · 43+ = 1,000 Ks',
+  'dialog.sound.title': 'အသံ အချက်ပြစနစ် (Audio Feedback)',
+  'dialog.sound.note': 'ထိုးငွေ/ပို့ငွေ ထည့်သွင်းသည့်အခါ Click အသံနှင့် ကန့်သတ်ချက် ကျော်လွန်သည့်အခါ သတိပေးအသံ (Over-Limit Alert) မြည်စေရန် ဖွင့်/ပိတ် နိုင်ပါသည်။',
+  'dialog.sound.enabled': 'အသံဖွင့်ထားသည်',
+  'dialog.sound.disabled': 'အသံပိတ်ထားသည်',
+  'dialog.sound.toggleLabel': 'အသံ အချက်ပြစနစ် ဖွင့်/ပိတ် ခလုတ်',
+  'dialog.sound.testClick': 'Click အသံ စမ်းသပ်ရန်',
+  'dialog.sound.testOverLimit': 'ကျော်နံပါတ် သတိပေးသံ စမ်းသပ်ရန်',
 
   'dialog.highlight': 'မီးမောင်းထိုးအရောင်',
   'dialog.highlight.note': 'ကန့်သတ်ချက် ကျော်သော ဇယား အကွက်များအတွက် အရောင် (မူရင်း စိမ်းပြာ၊ စုစုပေါင်း အတန်းကဲ့သို့)။',

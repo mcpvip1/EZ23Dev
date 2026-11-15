@@ -40,7 +40,8 @@ export type Icon8Name =
   | 'database'
   | 'globe'
   | 'mobile'
-  | 'crop';
+  | 'crop'
+  | 'volume';
 
 export interface Icon8Props {
   name: Icon8Name;
@@ -477,6 +478,16 @@ export function Icon8({ name, size = 16, className = '' }: Icon8Props): React.Re
           <rect x="15" y="15" width="21" height="21" rx="2" fill="#FFAB91" />
           <path d="M13 6V33C13 34.7 14.3 36 16 36H42" stroke={INK} strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
           <path d="M6 13H32C33.7 13 35 14.3 35 16V42" stroke={INK} strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+
+    case 'volume':
+      return (
+        <svg width={s} height={s} viewBox="0 0 48 48" fill="none" className={baseClass} aria-hidden="true">
+          <path d="M11 20H18L29 11V39L18 30H11C9.3 30 8 28.7 8 27V23C8 21.3 9.3 20 11 20Z" fill="#8CE7F2" />
+          <path d="M9 18H16L27 9V37L16 28H9C7.3 28 6 26.7 6 25V21C6 19.3 7.3 18 9 18Z" stroke={INK} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M33 17C35.2 19 36.5 21.4 36.5 24C36.5 26.6 35.2 29 33 31" stroke={INK} strokeWidth="3.2" strokeLinecap="round" />
+          <path d="M38 12C41.5 15.2 43.5 19.4 43.5 24C43.5 28.6 41.5 32.8 38 36" stroke={INK} strokeWidth="3.2" strokeLinecap="round" />
         </svg>
       );
   }

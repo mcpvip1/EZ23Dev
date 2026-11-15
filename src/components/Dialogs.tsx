@@ -11,6 +11,10 @@ import {
   MAX_FONT_SCALE,
   MIN_FONT_SCALE,
 } from '../lib/fontScale';
+import {
+  playEntryClickSound,
+  playOverLimitAlertSound,
+} from '../lib/soundFeedback';
 
 /**
  * Topmost-Esc stack: every modal/popup registers its onClose here, and a
@@ -205,6 +209,91 @@ export function FontScaleControl(p: {
         <span className="font-mono font-bold text-slate-900">
           {t('dialog.fontScale.previewText')}
         </span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Reusable Audio Feedback Toggle & Sound Test section
+ * shown inside Settings (CalcDialog) and About (AboutDialog).
+ */
+export function AudioFeedbackControl(p: {
+  soundEnabled: boolean;
+  onChange: (enabled: boolean) => void;
+}) {
+  const { t } = useLang();
+
+  return (
+    <div className="rounded-xl border border-emerald-200/90 bg-gradient-to-r from-emerald-50/70 via-slate-50 to-white p-3.5 shadow-2xs">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-600/15">
+            <Icon8 name="volume" size={14} />
+          </span>
+          <span className="text-xs font-extrabold text-slate-900">
+            {t('dialog.sound.title')}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span
+            data-testid="sound-feedback-badge"
+            className={`rounded-md px-2 py-0.5 text-[11px] font-extrabold ${
+              p.soundEnabled
+                ? 'bg-emerald-600 text-white'
+                : 'bg-slate-200 text-slate-600'
+            }`}
+          >
+            {p.soundEnabled ? t('dialog.sound.enabled') : t('dialog.sound.disabled')}
+          </span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={p.soundEnabled}
+            aria-label={t('dialog.sound.toggleLabel')}
+            data-testid="sound-feedback-toggle"
+            onClick={() => {
+              const next = !p.soundEnabled;
+              p.onChange(next);
+              if (next) {
+                playEntryClickSound(true);
+              }
+            }}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus:outline-none ${
+              p.soundEnabled ? 'bg-emerald-600' : 'bg-slate-300'
+            }`}
+          >
+            <span
+              className={`inline-block h-4.5 w-4.5 transform rounded-full bg-white shadow-sm transition-transform ${
+                p.soundEnabled ? 'translate-x-5' : 'translate-x-0.5'
+              }`}
+            />
+          </button>
+        </div>
+      </div>
+
+      <p className="mt-1 text-xs leading-relaxed text-slate-600">
+        {t('dialog.sound.note')}
+      </p>
+
+      <div className="mt-2.5 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => playEntryClickSound(true)}
+          className="btn btn-outline btn-sm h-7 min-h-0 gap-1.5 px-2.5 text-[11.5px] font-bold"
+        >
+          <Icon8 name="volume" size={12} />
+          <span>{t('dialog.sound.testClick')}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => playOverLimitAlertSound(true)}
+          className="btn btn-outline btn-sm h-7 min-h-0 gap-1.5 px-2.5 text-[11.5px] font-bold"
+        >
+          <Icon8 name="warning" size={12} />
+          <span>{t('dialog.sound.testOverLimit')}</span>
+        </button>
       </div>
     </div>
   );
@@ -436,6 +525,8 @@ export function CalcDialog(p: {
   rate: number;
   fontScale?: number;
   onFontScaleChange?: (pct: number) => void;
+  soundEnabled?: boolean;
+  onSoundEnabledChange?: (enabled: boolean) => void;
   onApply: (limit: number, commission: number, rate: number) => void;
   onClose: () => void;
 }) {
@@ -486,6 +577,15 @@ export function CalcDialog(p: {
           <FontScaleControl
             fontScale={p.fontScale ?? DEFAULT_FONT_SCALE}
             onChange={p.onFontScaleChange}
+          />
+        </div>
+      )}
+
+      {p.onSoundEnabledChange && (
+        <div className="mt-3">
+          <AudioFeedbackControl
+            soundEnabled={p.soundEnabled ?? true}
+            onChange={p.onSoundEnabledChange}
           />
         </div>
       )}
@@ -581,6 +681,8 @@ export function CloseDaysDialog(p: { onClose: () => void }) {
 export function AboutDialog(p: {
   fontScale: number;
   onFontScaleChange: (pct: number) => void;
+  soundEnabled: boolean;
+  onSoundEnabledChange: (enabled: boolean) => void;
   onClose: () => void;
 }) {
   const { t } = useLang();
@@ -590,6 +692,10 @@ export function AboutDialog(p: {
         <FontScaleControl
           fontScale={p.fontScale}
           onChange={p.onFontScaleChange}
+        />
+        <AudioFeedbackControl
+          soundEnabled={p.soundEnabled}
+          onChange={p.onSoundEnabledChange}
         />
         <div>
           <pre className="rounded-lg border border-slate-200 bg-slate-50 p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap text-slate-700">
