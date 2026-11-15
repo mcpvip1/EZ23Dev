@@ -89,7 +89,6 @@ export default function MenuBar(p: {
     { key: 'menu.system.backup', action: 'backup', icon: 'database' },
     { key: 'menu.system.highlight', action: 'highlight', icon: 'palette' },
     { key: 'menu.system.about', action: 'about', icon: 'help' },
-    { key: 'menu.system.exit', action: 'close', icon: 'close' },
   ];
 
   useEffect(() => {
