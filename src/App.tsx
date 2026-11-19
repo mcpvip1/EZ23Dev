@@ -1043,11 +1043,6 @@ export default function App() {
       case 'deviceStatus':
         setDialog('deviceStatus');
         break;
-      case 'copyDeviceId':
-        if (data?.deviceProfile?.deviceId && (await copyText(data.deviceProfile.deviceId))) {
-          showToast(t('toast.deviceIdCopied'));
-        }
-        break;
       case 'browseBets':
         setPopup({ kind: 'browse' });
         break;

@@ -84,3 +84,27 @@ Ko Aung
   assert.ok(report.receiptText.includes('OK Thanks!'));
   assert.ok(report.receiptText.includes('43+'));
 });
+
+test('parseSingleChatLine supports R reverse shorthand on codes and amounts', () => {
+  const r1 = parseSingleChatLine('၁၅.၂၅ ၂၀၀၀R', 0);
+  assert.equal(r1.status, 'valid');
+  assert.equal(r1.amount, '2000');
+  assert.equal(r1.expandedCount, 4); // 15, 51, 25, 52
+  assert.equal(r1.rowTotal, 8000);
+
+  const r2 = parseSingleChatLine('15.25 = 2000R', 1);
+  assert.equal(r2.status, 'valid');
+  assert.equal(r2.expandedCount, 4);
+  assert.equal(r2.rowTotal, 8000);
+
+  const r3 = parseSingleChatLine('15 25 R 2000', 2);
+  assert.equal(r3.status, 'valid');
+  assert.equal(r3.expandedCount, 4);
+  assert.equal(r3.rowTotal, 8000);
+
+  const r4 = parseSingleChatLine('43R 1000', 3);
+  assert.equal(r4.status, 'valid');
+  assert.equal(r4.expandedCount, 2);
+  assert.equal(r4.rowTotal, 2000);
+});
+

@@ -275,7 +275,6 @@ export default function Board(p: BoardProps) {
             accent="indigo"
             codeInputRef={p.fighterCodeRef}
             personSelectRef={p.fighterPersonRef}
-            onOrder={() => undefined}
             onDots={p.onBrowseFighter}
             onOpenChatIngest={p.onOpenChatIngest}
             onAddNewPerson={p.onAddPerson}
@@ -497,7 +496,6 @@ export default function Board(p: BoardProps) {
             accent="amber"
             codeInputRef={p.carryCodeRef}
             personSelectRef={p.carryPersonRef}
-            onOrder={() => undefined}
             onDots={p.onBrowseCarry}
             onAddNewPerson={p.onAddPerson}
             extraTop={

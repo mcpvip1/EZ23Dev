@@ -22,7 +22,6 @@ export interface MenuAction {
     | 'highlight'
     | 'backup'
     | 'deviceStatus'
-    | 'copyDeviceId'
     | 'browseBets'
     | 'reportCurrent'
     | 'reportDaily'
@@ -133,7 +132,7 @@ export default function MenuBar(p: {
           />
         </button>
         {isOpen && (
-          <div className="absolute right-0 top-full z-40 mt-1.5 min-w-68 rounded-xl border border-slate-200/90 bg-white p-1.5 shadow-2xl ring-1 ring-slate-900/5">
+          <div className="absolute left-0 sm:left-auto sm:right-0 top-full z-40 mt-1.5 min-w-60 sm:min-w-68 max-w-[calc(100vw-1rem)] rounded-xl border border-slate-200/90 bg-white p-1.5 shadow-2xl ring-1 ring-slate-900/5">
             {items.map((it) => (
               <button
                 key={it.key}
@@ -198,12 +197,12 @@ export default function MenuBar(p: {
         </div>
 
         {/* Primary Dropdown Menus & Language Selector (Right-Aligned) */}
-        <nav className="ml-auto flex items-center gap-1.5" aria-label="Main Menu">
+        <nav className="ml-auto flex flex-wrap items-center gap-1 sm:gap-1.5" aria-label="Main Menu">
           {menu('setup', 'menu.setup', SETUP, 'settings')}
           {menu('report', 'menu.report', REPORT, 'report')}
           {menu('system', 'menu.system', SYSTEM, 'device')}
 
-          <div className="mx-0.5 h-4 w-px bg-slate-700/80" />
+          <div className="mx-0.5 hidden h-4 w-px bg-slate-700/80 sm:block" />
 
           {/* Combined English & Myanmar Language Selector */}
           <div

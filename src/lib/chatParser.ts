@@ -131,24 +131,29 @@ export function parseSingleChatLine(rawLine: string, index: number): ParsedChatB
   // 5) <amount> = <code(s)>   (e.g. "1000 = 43+")
   let codePart = '';
   let amtPart = '';
+  let reverseFromAmount = false;
 
-  const sepMatch = cleanLine.match(/^(.+?)\s*([=:~-])\s*(\d+(?:\/\d+)?)$/);
+  const sepMatch = cleanLine.match(/^(.+?)\s*([=:~-])\s*(\d+(?:\/\d+)?)\s*([rR])?$/);
   if (sepMatch) {
     codePart = sepMatch[1].trim();
     amtPart = sepMatch[3].trim();
+    if (sepMatch[4]) reverseFromAmount = true;
   } else {
     // Reverse separator pattern: 1000 = 43+
-    const revMatch = cleanLine.match(/^(\d+(?:\/\d+)?)\s*([=:~-])\s*(.+)$/);
+    const revMatch = cleanLine.match(/^(\d+(?:\/\d+)?)\s*([rR])?\s*([=:~-])\s*(.+)$/);
     if (revMatch) {
       amtPart = revMatch[1].trim();
-      codePart = revMatch[3].trim();
+      if (revMatch[2]) reverseFromAmount = true;
+      codePart = revMatch[4].trim();
     } else {
-      // Space separated: last token is amount if it's numeric or numeric split
+      // Space separated: last token is amount if it's numeric, numeric split, or numeric+R (e.g. "15.25 2000R")
       const tokens = cleanLine.split(/\s+/);
       if (tokens.length >= 2) {
         const last = tokens[tokens.length - 1];
-        if (/^\d+(\/\d+)?$/.test(last)) {
-          amtPart = last;
+        const amtTokenMatch = last.match(/^(\d+(?:\/\d+)?)([rR])?$/);
+        if (amtTokenMatch) {
+          amtPart = amtTokenMatch[1];
+          if (amtTokenMatch[2]) reverseFromAmount = true;
           codePart = tokens.slice(0, -1).join(' ');
         }
       }
@@ -177,8 +182,14 @@ export function parseSingleChatLine(rawLine: string, index: number): ParsedChatB
     .trim()
     .toLowerCase();
 
-  // If there's a space before a modifier like '+', e.g. "43 +", collapse to "43+"
-  cleanCode = cleanCode.replace(/(\d)\s+\+/g, '$1+');
+  // Normalize common 'r' / 'R' reverse shorthand (e.g. "43r", "43 r", "15.25r", "15 25 r") -> "+"
+  cleanCode = cleanCode
+    .replace(/(\d)\s*r\b/g, '$1+')
+    .replace(/(\d)\s+\+/g, '$1+');
+
+  if (reverseFromAmount && !cleanCode.endsWith('+')) {
+    cleanCode = `${cleanCode}+`;
+  }
 
   const amtNum = amtPart.includes('/')
     ? amtPart.split('/').reduce((acc, v) => acc + (parseInt(v, 10) || 0), 0)

@@ -33,7 +33,6 @@ interface Props {
   codeInputRef?: MutableRefObject<HTMLInputElement | null>;
   personSelectRef?: MutableRefObject<HTMLInputElement | null>;
   extraTop?: React.ReactNode;
-  onOrder: () => void;
   onDots: () => void;
   onOpenChatIngest?: () => void;
 }
@@ -55,7 +54,6 @@ export default function EntryPanel(p: Props) {
   const [amount, setAmount] = useState('');
   const [activeField, setActiveField] = useState<'code' | 'amount'>('code');
   const [invalid, setInvalid] = useState(false);
-  const [sortMode, setSortMode] = useState<'entry' | 'code'>('entry');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [editCode, setEditCode] = useState('');
@@ -202,10 +200,7 @@ export default function EntryPanel(p: Props) {
     }
   };
 
-  const shownRows = useMemo(
-    () => (sortMode === 'code' ? [...p.rows].sort((a, b) => a.displayCode.localeCompare(b.displayCode)) : p.rows),
-    [p.rows, sortMode],
-  );
+  const shownRows = p.rows;
 
   const isIndigo = p.accent === 'indigo';
   const accentBtn = isIndigo ? 'btn-primary' : 'btn-amber';
@@ -265,22 +260,6 @@ export default function EntryPanel(p: Props) {
             </option>
           ))}
         </datalist>
-
-        <button
-          type="button"
-          onClick={() => {
-            setSortMode((m) => (m === 'entry' ? 'code' : 'entry'));
-            p.onOrder();
-          }}
-          className={`btn btn-sm h-7 min-h-0 shrink-0 gap-1 px-1.5 text-[12.5px] font-bold whitespace-nowrap ${
-            sortMode === 'code' ? 'btn-primary' : 'btn-outline'
-          }`}
-          aria-pressed={sortMode === 'code'}
-          title={t('entry.orderTitle')}
-        >
-          <Icon8 name="sort" size={12} />
-          <span>{t('entry.order')}</span>
-        </button>
 
         <button
           type="button"
