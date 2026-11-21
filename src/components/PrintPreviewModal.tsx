@@ -113,7 +113,7 @@ export default function PrintPreviewModal(p: PrintPreviewProps) {
     [shareText],
   );
   const telegramUrl = useMemo(
-    () => `https://t.me/share/url?url=${encodeURIComponent('https://easy2d.pro')}&text=${encodeURIComponent(shareText)}`,
+    () => `https://t.me/share/url?url=${encodeURIComponent('https://ez2d3d.page.gd')}&text=${encodeURIComponent(shareText)}`,
     [shareText],
   );
 
